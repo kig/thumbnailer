@@ -4,19 +4,23 @@ require 'thumbnailer'
 require 'optparse'
 
 
-options = {}
+options = {:crop => '0x0+0+0'}
 opts = OptionParser.new do |opts|
   opts.banner = "#{$0} [options] input_filename thumbnail_filename"
 
   opts.separator ""
-  opts.on("-s", "Max dimension of output image"){|p| options[:size] = p.to_i }
+  opts.on("-s", "--size SIZE", Integer, "Max dimension of output image"){|p|
+    options[:size] = p.to_i
+  }
   opts.on("-i", "--input-type TYPE", "Input file mimetype (overrides auto-detect)"){|p|
-    options[:input_type] = p }
+    options[:input_type] = p
+  }
 #   opts.on("-o", "--output-type TYPE", "Output image type (overrides filename)"){|p|
 #     options[:output_type] = p }
   opts.on("-c", "--crop CROP", "Crop rectangle (WxH+X+Y)"){|p|
-    options[:crop] = p }
-  opts.on("-p", "--page PAGENUM", "Page to thumbnail (time for videos)"){|p|
+    options[:crop] = p
+  }
+  opts.on("-p", "--page PAGENUM", Integer, "Page to thumbnail (time for videos)"){|p|
     options[:page] = (p =~ /\./ ? p.to_f : p.to_i)
   }
   opts.on("-q", "Don't print error messages"){|p| Thumbnailer.quiet = true }
