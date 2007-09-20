@@ -20,22 +20,21 @@ Usage
   # create a full-size jpeg thumbnail
   $ thumbnailer foo.png foo.jpg
   $ thumbnailer bar.avi foo.jpg
-  
+
   # create a thumbnail that's scaled to fit in a 1024x1024 square
   $ thumbnailer -size 1024 foo.pdf foo_thumb.jpg
-  
-  # read audio/mpeg data from stdin and write out png data
-  $ thumbnailer -i audio/mpeg -o png < foo.mp3 > foo_thumb.png
-  
-  # same as above but write out jpg data
-  $ thumbnailer -i audio/mpeg -o jpg < foo.mp3 > foo_thumb.jpg
 
 
   irb> require 'thumbnailer'
+
+  # fit the jpg inside a 256x256 square
   irb> Thumbnailer.thumbnail("foo.png", "foo_thumb.jpg", 256)
-  irb> Thumbnailer.thumbnail("bar.pdf", "bar_thumb.png", 2048)
-  irb> Thumbnailer.thumbnail("twigl.mp3", "twigl.jpg", 512)
-  irb> Thumbnailer.thumbnail("qux.avi", "qux_thumb.jpg", 1024)
+
+  # page five of the pdf, cropped to a 256x256 square at the top-left
+  irb> Thumbnailer.thumbnail("bar.pdf", "bar_thumb.png", 2048, 5, '256x256+0+0')
+
+  # take the thumbnail at 30 seconds in the video
+  irb> Thumbnailer.thumbnail("qux.avi", "qux_thumb.jpg", 1024, 30)
 
 
 List of supported formats
@@ -76,13 +75,20 @@ Requirements
 ------------
 
   * Ruby 1.8
+
+  * Metadata library for Ruby
+    http://dark.fhtr.org/repos/metadata
   
   * Tons of image converter programs and shared-mime-info.
+    http://freedesktop.org/wiki/Software/shared-mime-info
     List of debian packages:
       xvfb
       openoffice.org
       python-uno
       libimlib2-ruby
+      netpbm
+      paps
+      gs-common
       imagemagick
       mplayer
       ffmpeg

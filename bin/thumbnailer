@@ -1,0 +1,44 @@
+#!/usr/bin/ruby
+
+require 'thumbnailer'
+require 'optparse'
+
+
+options = {}
+opts = OptionParser.new do |opts|
+  opts.banner = "#{$0} [options] input_filename thumbnail_filename"
+
+  opts.separator ""
+  opts.on("-s", "Max dimension of output image"){|p| options[:size] = p.to_i }
+  opts.on("-i", "--input-type TYPE", "Input file mimetype (overrides auto-detect)"){|p|
+    options[:input_type] = p }
+#   opts.on("-o", "--output-type TYPE", "Output image type (overrides filename)"){|p|
+#     options[:output_type] = p }
+  opts.on("-c", "--crop CROP", "Crop rectangle (WxH+X+Y)"){|p|
+    options[:crop] = p }
+  opts.on("-p", "--page PAGENUM", "Page to thumbnail (time for videos)"){|p|
+    options[:page] = (p =~ /\./ ? p.to_f : p.to_i)
+  }
+  opts.on("-q", "Don't print error messages"){|p| Thumbnailer.quiet = true }
+  opts.on("-v", "Verbose output to stderr"){|p| Thumbnailer.verbose = true }
+end
+
+opts.parse!(ARGV)
+filenames = ARGV
+
+if filenames.size != 2
+  puts opts.banner
+  exit!(1)
+end
+
+infile, outfile = ARGV[0,2]
+
+if options[:input_type]
+  mt = Mimetype[options[:input_type]]
+else
+  mt = infile.to_pn.mimetype
+end
+
+mt.thumbnail(
+  infile, outfile, options[:size], options[:page], options[:crop]
+)
