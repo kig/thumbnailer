@@ -1,0 +1,120 @@
+Description
+-----------
+
+  This package `Thumbnailer' comes with a library called `thumbnailer' and
+  a program called `thumbnailer'.
+
+  The thumbnailer library uses external thumbnailing programs to create an
+  image of wanted size from a given file. Supported output formats are PNG
+  and JPEG.
+  
+  As my own use for the thumbnailer is as a source of mipmapped textures,
+  the default behaviour is to create a full-size thumbnail. E.g. if you
+  have a 3039x2014 camera raw, you'll get a 3039x2014 jpeg or png out. For
+  PDFs, the default size is 2048px on the longest side.
+
+
+Usage
+-----
+
+  # create a full-size jpeg thumbnail
+  $ thumbnailer foo.png foo.jpg
+  $ thumbnailer bar.avi foo.jpg
+  
+  # create a thumbnail that's scaled to fit in a 1024x1024 square
+  $ thumbnailer -size 1024 foo.pdf foo_thumb.jpg
+  
+  # read audio/mpeg data from stdin and write out png data
+  $ thumbnailer -i audio/mpeg -o png < foo.mp3 > foo_thumb.png
+  
+  # same as above but write out jpg data
+  $ thumbnailer -i audio/mpeg -o jpg < foo.mp3 > foo_thumb.jpg
+
+
+  irb> require 'thumbnailer'
+  irb> Thumbnailer.thumbnail("foo.png", "foo_thumb.jpg", 256)
+  irb> Thumbnailer.thumbnail("bar.pdf", "bar_thumb.png", 2048)
+  irb> Thumbnailer.thumbnail("twigl.mp3", "twigl.jpg", 512)
+  irb> Thumbnailer.thumbnail("qux.avi", "qux_thumb.jpg", 1024)
+
+
+List of supported formats
+-------------------------
+
+  Images
+    Most image formats. PSDs probably not too accurately.
+
+
+  Videos
+    Anything mplayer / ffmpeg can play.
+    
+
+  Audio
+    The audio thumbnailing system is a wee bit peculiar, since it relies
+    on a Tcl/Tk app to create a waveform and spectrogram of the audio.
+    And that requires an X server, of which Xvfb is the best for this
+    purpose.
+    
+    Successfully tested:
+      mp3, wav
+    
+
+  Documents
+    The document thumbnailer first converts the document into a PDF, then
+    thumbnails the PDF. The PDF conversion requires ooffice for office
+    documents. And ooffice needs an X server. Thankfully no window though.
+    
+    The HTML thumbnailer uses GtkMozEmbed, which requires an X server. So it
+    uses yet another Xvfb server for it.
+  
+
+  Others
+    Thumbnailer can use a mimetype-specific icon from a given icon directory.
+
+
+Requirements
+------------
+
+  * Ruby 1.8
+  
+  * Tons of image converter programs and shared-mime-info.
+    List of debian packages:
+      xvfb
+      openoffice.org
+      python-uno
+      libimlib2-ruby
+      imagemagick
+      mplayer
+      ffmpeg
+      libsnack2
+      poppler-utils (v0.6)
+
+  * You need the latest version of dcraw to handle some camera raw images.
+    http://cybercom.net/~dcoffin/dcraw/
+
+  * You need unoconv for thumbnailing office documents:
+    http://dag.wieers.com/home-made/unoconv/
+
+
+Install
+-------
+
+  De-compress archive and enter its top directory.
+  Then type:
+
+   ($ su)
+    # ruby setup.rb
+
+  These simple step installs this program under the default
+  location of Ruby libraries.  You can also install files into
+  your favorite directory by supplying setup.rb some options.
+  Try "ruby setup.rb --help".
+
+
+License
+-------
+
+  GPL v3
+
+
+Ilmari Heikkinen <ilmari.heikkinen gmail com>
