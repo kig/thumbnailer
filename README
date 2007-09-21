@@ -42,12 +42,15 @@ List of supported formats
 -------------------------
 
   Images
-    Most image formats. PSDs probably not too accurately.
+    Most image formats. PSDs probably not too accurately. XCFs not at all.
+    Successfully tested:
+      jpg, png, gif, psd, orf, nef, dng, crw, pef
 
 
   Videos
     Anything mplayer / ffmpeg can play.
-    
+    Successfully tested:
+      mkv, flv, avi, 
 
   Audio
     The audio thumbnailing system is a wee bit peculiar, since it relies
@@ -57,6 +60,9 @@ List of supported formats
     
     Successfully tested:
       mp3, wav
+      
+    Doesn't work right:
+      m4a, flac, ra, ape, ogg, wma
     
 
   Documents
@@ -66,6 +72,9 @@ List of supported formats
     
     The HTML thumbnailer uses GtkMozEmbed, which requires an X server. So it
     uses yet another Xvfb server for it.
+
+    Successfully tested:
+      pdf, html, ps, ps.gz, txt
   
 
   Others
