@@ -237,6 +237,7 @@ module Mimetype
   }
 
   def waveform_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+#   mplayer -ao pcm:fast:file=blah
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-waveform.png"

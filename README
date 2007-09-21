@@ -42,15 +42,19 @@ List of supported formats
 -------------------------
 
   Images
-    Most image formats. PSDs probably not too accurately. XCFs not at all.
+    Most image formats. PSDs probably not too accurately.
     Successfully tested:
-      jpg, png, gif, psd, orf, nef, dng, crw, pef
+      jpg, png, gif, psd, orf, nef, dng, crw, pef, tif, xpm, ppm, tga
+
+    Doesn't work right:
+      xcf
 
 
   Videos
     Anything mplayer / ffmpeg can play.
     Successfully tested:
-      mkv, flv, avi, 
+      mkv, flv, avi, mpg, mov
+
 
   Audio
     The audio thumbnailing system is a wee bit peculiar, since it relies
@@ -68,17 +72,19 @@ List of supported formats
   Documents
     The document thumbnailer first converts the document into a PDF, then
     thumbnails the PDF. The PDF conversion requires ooffice for office
-    documents. And ooffice needs an X server. Thankfully no window though.
+    documents.
     
     The HTML thumbnailer uses GtkMozEmbed, which requires an X server. So it
     uses yet another Xvfb server for it.
 
     Successfully tested:
-      pdf, html, ps, ps.gz, txt
+      pdf, html, ps, ps.gz, txt, sxi, ppt, odp
   
 
   Others
     Thumbnailer can use a mimetype-specific icon from a given icon directory.
+    Successfully tested:
+      directory, bz2, torrent, flac
 
 
 Requirements
