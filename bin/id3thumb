@@ -1,0 +1,17 @@
+#!/usr/bin/ruby
+require 'rubygems'
+require 'id3lib'
+
+def extract_pic(filename)
+  t = ID3Lib::Tag.new(filename)
+  pic = t.find{|f| f[:id] == :APIC }
+  pic
+end
+
+filename = ARGV.shift
+pic = extract_pic(filename)
+if pic and pic[:data]
+  STDOUT.write(pic[:data])
+else
+  exit!(1)
+end

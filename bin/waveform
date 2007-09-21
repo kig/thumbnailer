@@ -1,0 +1,30 @@
+#!/usr/bin/wish
+
+if { $argc != 2 && $argc != 1 } {
+  puts "USAGE: waveform SOUNDFILE PNGFILE"
+} else {
+  package require snack
+  package require Img
+
+  set colormap {#000 #006 #00B #00F #03F #07F #0BF #0FF #0FB #0F7 #0F0 #3F0 #7F0 #BF0 #FF0 #FB0 #F70 #F30 #F00}
+
+  snack::sound s -load [lindex $argv 0]
+
+  set len [s length -unit SECONDS]
+  set w [expr {int(($len / 300.0) * 512.0)}]
+
+  canvas .c -bg #000 -width $w -height 512
+  pack .c
+
+  .c create waveform 0 0 -sound s -width $w -height 128 -fill #08B
+  .c create spectrogram 0 128 -sound s -width $w -height 384 -colormap $colormap
+  update
+
+  if { $argc == 2 } {
+    raise .
+    set img [image create photo -format window -data .c]
+    $img write [lindex $argv 1] -format PNG
+    #.c postscript -file [lindex $argv 1] -width 514 -height 130 -x 0.0 -y 0.0
+    exit
+  }
+}

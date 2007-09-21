@@ -16,15 +16,26 @@
 
 
 
-
+begin
+  require 'rubygems'
+rescue LoadError
+end
 
 require 'metadata'
-require 'pathname'
-require 'fileutils'
-require 'imlib2'
 
 
 
+class Pathname
+
+  def mkdir_p
+    FileUtils.mkdir_p(to_s)
+  end
+
+  def glob(subpath, *args)
+    self.class.glob((self+subpath).to_s, *args)
+  end
+
+end
 
 
 module Thumbnailer
@@ -38,6 +49,8 @@ extend self
   end
 
 end
+
+Thumbnailer.icon_dir ||= __FILE__.to_pn.dirname + 'icons'
 
 
 module Mimetype
@@ -186,22 +199,22 @@ module Mimetype
     original_filename = filename
     filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}-src#{extname}"
     begin
-      FileUtils.ln_s(original_filename.to_s, filename.to_s)
+      FileUtils.ln_s(File.expand_path(original_filename.to_s), filename.to_s)
       filename.mimetype = self
       dims = filename.dimensions
       return false unless dims[0] and dims[1]
       larger = dims.max
       thumb_size ||= 2048
-      case filename.metadata.dimensions_unit
+      case filename.metadata['Image.DimensionsUnit']
       when 'mm'
         scale_fac = larger.mm_to_points / 72
       else
         scale_fac = larger / 72
       end
       density = thumb_size / scale_fac
-      secure_filename(filename){|sfn|
+      secure_filename(filename){|sfn, uqsfn|
         args = ["-density", density.to_s,
-                "#{sfn}[#{page}]",
+                "#{uqsfn}[#{page}]",
                 "-scale", "#{thumb_size}x#{thumb_size}",
                 "-crop", crop.to_s,
                 tmp_filename.to_s]
@@ -231,8 +244,8 @@ module Mimetype
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-waveform2.png"
     File.open('/tmp/.waveform.lock','w') {|f|
       f.flock(File::LOCK_EX)
-      secure_filename(filename.to_s){|sfn|
-        system("audiothumb", "-display", ":16", sfn, tmp_filename.to_s)
+      secure_filename(filename){|sfn, uqsfn|
+        system("audiothumb", "-display", ":16", uqsfn, tmp_filename.to_s)
       }
       f.flock(File::LOCK_UN)
     }
@@ -252,9 +265,9 @@ module Mimetype
   def paps_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     tfn = filename.to_pn
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
-    charset = filename.to_pn.metadata.charset
+    charset = filename.to_pn.metadata['Doc.Charset']
     unless tmp_filename.exist?
-      secure_filename(filename.to_s){|sfn|
+      secure_filename(filename){|sfn, uqsfn|
         system("iconv -f #{charset} -t utf8 #{sfn} | paps --font_scale 11 --columns 1 | ps2pdf - #{tmp_filename.to_s.dump}")
       }
     end
@@ -269,10 +282,18 @@ module Mimetype
   def postscript_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     tfn = filename.to_pn
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
-    charset = filename.to_pn.metadata.charset
+    charset = filename.to_pn.metadata['Doc.Charset']
     unless tmp_filename.exist?
-      secure_filename(filename.to_s){|sfn|
-        system("ps2pdf #{sfn} #{tmp_filename.to_s.dump}")
+      filter = case File.extname(filename.to_s)
+               when '.gz'
+                "zcat "
+               when '.bz2'
+                "bzcat "
+               else
+                "cat "
+               end
+      secure_filename(filename){|sfn, uqsfn|
+        system("#{filter} #{sfn} | ps2pdf - #{tmp_filename.to_s.dump}")
       }
     end
     rv = false
@@ -287,7 +308,7 @@ module Mimetype
     tfn = filename.to_pn
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
     unless tmp_filename.exist?
-      secure_filename(filename.to_s){|sfn|
+      secure_filename(filename){|sfn, uqsfn|
         system("unoconv -s #{sfn} > #{tmp_filename.to_s.dump}")
       }
     end
@@ -301,7 +322,7 @@ module Mimetype
   
   def pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     w,h,x,y = crop.scan(/[+-]?[0-9]+/).map{|i|i.to_i}
-    secure_filename(filename.to_s){|sfn|
+    secure_filename(filename){|sfn, uqsfn|
       args = ["-x", x, 
               "-y", y,
               "-W", w,
@@ -309,7 +330,7 @@ module Mimetype
               "-scale-to", thumb_size || 2048,
               "-f", page + 1,
               "-l", page + 1,
-              sfn]
+              uqsfn]
       ext = File.extname(thumb_filename.to_s)
       args += ["|", PNMPROGS[ext], ">", thumb_filename.to_s.dump]
       system("pdftoppm " + args.join(" "))
@@ -325,7 +346,7 @@ module Mimetype
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-dcraw.ppm"
-    secure_filename(filename){|sfn|
+    secure_filename(filename){|sfn, uqsfn|
       system("dcraw -c #{sfn} > #{tmp_filename.expand_path.to_s.dump}")
     }
     rv = Mimetype['image/x-portable-pixmap'].image_thumbnail(tmp_filename,
@@ -428,8 +449,7 @@ module Mimetype
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-ffmpeg.png"
-    Thumbnailer.temp_dir.mkdir_p
-    secure_filename(filename){|sfn|
+    secure_filename(filename){|sfn, uqsfn|
       `ffmpeg -i #{sfn} -vcodec png -f rawvideo -ss  #{page.to_s} -r 1 -an -vframes 1 -y #{tmp_filename.to_s.dump} 2>/dev/null`
     }
     if tmp_filename.exist?
@@ -448,13 +468,12 @@ module Mimetype
     mplayer = `which mplayer32`.strip
     mplayer = `which mplayer`.strip if mplayer.empty?
     mplayer = "mplayer" if mplayer.empty?
-    secure_filename(filename){|sfn|
-      fn = sfn.to_pn
-      fn.mimetype = self
-      aspect = fn.width / fn.height.to_f
+    fn = filename.to_pn
+    aspect = fn.width / fn.height.to_f
+    secure_filename(filename){|sfn, uqsfn|
       system(mplayer, "-really-quiet", "-aspect", aspect.to_s, "-nosound",
-             "-ss", page.to_s, "-vo", "jpeg:outdir=#{video_cache_dir}",
-             "-frames", "10", sfn)
+              "-ss", page.to_s, "-vo", "jpeg:outdir=#{video_cache_dir}",
+              "-frames", "10", uqsfn)
     }
     j = video_cache_dir.glob("*.jpg").sort.last
     Mimetype['image/jpeg'].image_thumbnail(j, thumb_filename, thumb_size, 0, crop) if j
@@ -472,7 +491,8 @@ module Mimetype
   #
   # This is needed because of filenames like "-h".
   #
-  def secure_filename(filename)
+  def secure_filename(fn)
+    filename = fn.to_s
     if filename =~ /^-/
       dirname = File.dirname(File.expand_path(filename))
       tfn = "/tmp/" + temp_filename + (File.extname(filename) || "").
@@ -480,11 +500,11 @@ module Mimetype
       begin
         FileUtils.ln(filename, tfn)
       rescue
-        FileUtils.cp(filename, tfn) # different fs for /tmp
+        FileUtils.cp(filename, tfn) # if different fs for /tmp
       end
-      yield(tfn)
+      yield(tfn, tfn)
     else # trust the filename to not blow up in our face
-      yield(%Q("#{filename.gsub(/[$"]/, "\\\\\\0")}"))
+      yield(%Q("#{filename.gsub(/[$"]/, "\\\\\\0")}"), filename)
     end
   ensure
     File.unlink(tfn) if tfn and File.exist?(tfn)

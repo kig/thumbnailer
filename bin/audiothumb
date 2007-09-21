@@ -1,0 +1,61 @@
+#!/usr/bin/ruby
+
+require 'imlib2'
+if di = ARGV.index("-display")
+  ARGV.delete_at(di)
+  display = ARGV[di]
+  ARGV.delete_at(di)
+end
+
+if ARGV.size != 2
+  puts "USAGE: audiothumb AUDIOFILE PNGFILE"
+else
+  tmpfile = ".audiofile-temp-#{Process.pid}-#{Time.now.to_f}.png"
+  tmpfile2 = ".audiofile-temp2-#{Process.pid}-#{Time.now.to_f}.png"
+  if display
+    system("waveform", "-display", display, ARGV[0], tmpfile)
+  else
+    system("waveform", ARGV[0], tmpfile)
+  end
+  if File.exist?(tmpfile)
+    wf = Imlib2::Image.load(tmpfile)
+  end
+  thumb = `id3thumb #{ARGV[0].dump}`
+  if thumb.size > 0
+    File.open(tmpfile2, 'w'){|f|
+      f.write thumb
+    }
+    tf = Imlib2::Image.load(tmpfile2)
+  end
+  File.unlink(tmpfile) if File.exist?(tmpfile)
+  File.unlink(tmpfile2) if File.exist?(tmpfile2)
+  if wf and tf
+    image = Imlib2::Image.new(256,512)
+    image.has_alpha = true
+    image.clear_color!(Imlib2::Color::TRANSPARENT)
+    larger = [tf.width, tf.height].max
+    tw = (tf.width / larger.to_f) * 256
+    th = (tf.height / larger.to_f) * 256
+    image.blend!(tf,
+      0, 0, tf.width, tf.height,
+      (image.width-tw)/2, 0, tw, th
+    )
+    larger = [wf.width, wf.height].max
+    ww = (wf.width / larger.to_f) * 256
+    wh = (wf.height / larger.to_f) * 256
+    image.blend!(wf,
+      0, 0, wf.width, wf.height,
+      (image.width-ww)/2, th, ww, wh
+    )
+    if th + wh < 512
+      image.crop!(0,0, 256, th+wh)
+    end
+    image.save(ARGV[1])
+  elsif wf
+    wf.save(ARGV[1])
+  elsif tf
+    tf.save(ARGV[1])
+  else
+    exit!(1)
+  end
+end

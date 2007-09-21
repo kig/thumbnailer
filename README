@@ -11,7 +11,8 @@ Description
   As my own use for the thumbnailer is as a source of mipmapped textures,
   the default behaviour is to create a full-size thumbnail. E.g. if you
   have a 3039x2014 camera raw, you'll get a 3039x2014 jpeg or png out. For
-  PDFs, the default size is 2048px on the longest side.
+  PDFs, the default size is 2048px on the longest side. For videos, it's
+  2048px wide or something like that. Huge, anyhow.
 
 
 Usage
