@@ -41,7 +41,7 @@ end
 module Thumbnailer
 extend self
 
-  attr_accessor :verbose, :quiet, :icon_dir
+  attr_accessor :verbose, :quiet, :icon_dir, :keep_temp
 
   def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0')
     mt = filename.to_pn.mimetype
@@ -316,7 +316,7 @@ module Mimetype
     rv = false
     if tmp_filename.exist?
       rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-      tmp_filename.unlink unless rv
+      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
     end
     rv
   end
@@ -341,7 +341,7 @@ module Mimetype
     rv = false
     if tmp_filename.exist?
       rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-      tmp_filename.unlink unless rv
+      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
     end
     rv
   end
@@ -357,7 +357,7 @@ module Mimetype
     rv = false
     if tmp_filename.exist?
       rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-      tmp_filename.unlink unless rv
+      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
     end
     rv
   end

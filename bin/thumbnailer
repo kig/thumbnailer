@@ -44,6 +44,7 @@ opts = OptionParser.new do |opts|
   opts.on("-p", "--page PAGENUM", Integer, "Page to thumbnail (time for videos)"){|p|
     options[:page] = (p =~ /\./ ? p.to_f : p.to_i)
   }
+  opts.on("-k", "--keep-temp", "Don't delete temp PDF files"){|p| Thumbnailer.keep_temp = true }
   opts.on("-q", "Don't print error messages"){|p| Thumbnailer.quiet = true }
   opts.on("-v", "Verbose output to stderr"){|p| Thumbnailer.verbose = true }
 end
