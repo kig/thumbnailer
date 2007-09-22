@@ -227,7 +227,7 @@ module Mimetype
       return false unless dims[0] and dims[1]
       larger = dims.max
       thumb_size ||= 2048
-      case filename.metadata['Image.DimensionsUnit']
+      case filename.metadata['Image.DimensionUnit']
       when 'mm'
         scale_fac = larger.mm_to_points / 72.0
       else
