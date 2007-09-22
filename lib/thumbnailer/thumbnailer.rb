@@ -137,19 +137,35 @@ module Mimetype
   end
 
   def icon_thumbnail(filename, thumb_filename, thumb_size, crop='0x0+0+0')
-    Mimetype['image/png'].image_thumbnail(icon(thumb_size), thumb_filename, thumb_size, 0, crop)
+    ic = icon
+    mt = (ic.extname == '.png' ? Mimetype['image/png'] : Mimetype['image/svg+xml'])
+    mt.image_thumbnail(ic, thumb_filename, thumb_size, 0, crop)
   end
 
-  def icon(thumb_size=128)
-    ancestors.map do |klass|
-      Thumbnailer.icon_dir + (klass.to_s.downcase.gsub(/\//, '-')+".png")
+  def icon
+    ic = ancestors.map do |klass|
+      pn = Thumbnailer.icon_dir + (klass.to_s.downcase.gsub(/\//, '-')+".svg")
+      unless pn.exist?
+        pn = Thumbnailer.icon_dir + (klass.to_s.downcase.gsub(/\//, '-')+".png")
+      end
+      pn
     end.find{|pn| pn.exist? }
+    unless ic
+      ic = Thumbnailer.icon_dir + "default.svg"
+      unless ic.exist?
+        ic = Thumbnailer.icon_dir + "default.png"
+      end
+    end
+    ic
   end
 
   def image_thumbnail(filename, thumb_filename, thumb_size, page=0, crop='0x0+0+0')
+    if to_s == 'image/x-xcf'
+      return false
+    end
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}#{tfn.extname}"
-    if to_s =~ /^image/
+    if to_s =~ /^image/ and not to_s =~ /svg/
       begin
         img = Imlib2::Image.load(filename.to_s)
         begin
@@ -197,7 +213,13 @@ module Mimetype
       return true
     end
     original_filename = filename
-    filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}-src#{extname}"
+    ex = filename.to_pn.extname
+    unless extnames.include?(ex)
+      ex = extname
+      ex = '.svg' if ex == '.svgz'
+      ex = '.tga' if ex == '.icb'
+    end
+    filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}-src#{ex}"
     begin
       FileUtils.ln_s(File.expand_path(original_filename.to_s), filename.to_s)
       filename.mimetype = self
@@ -207,18 +229,27 @@ module Mimetype
       thumb_size ||= 2048
       case filename.metadata['Image.DimensionsUnit']
       when 'mm'
-        scale_fac = larger.mm_to_points / 72
+        scale_fac = larger.mm_to_points / 72.0
       else
-        scale_fac = larger / 72
+        scale_fac = larger / 72.0
       end
       density = thumb_size / scale_fac
       secure_filename(filename){|sfn, uqsfn|
-        args = ["-density", density.to_s,
-                "#{uqsfn}[#{page}]",
-                "-scale", "#{thumb_size}x#{thumb_size}",
-                "-crop", crop.to_s,
-                tmp_filename.to_s]
-        system("convert", *args)
+        if to_s =~ /svg/
+          args = ["-w", ((dims[0] / larger.to_f) * thumb_size).to_i.to_s,
+                  "-h", ((dims[1] / larger.to_f) * thumb_size).to_i.to_s,
+                  "-f", tmp_filename.extname == ".png" ? 'png' : 'jpeg',
+                  uqsfn,
+                  tmp_filename.to_s]
+          system("rsvg", *args)
+        else
+          args = ["-density", density.to_s,
+                  "#{uqsfn}[#{page}]",
+                  "-scale", "#{thumb_size}x#{thumb_size}",
+                  "-crop", crop.to_s,
+                  tmp_filename.to_s]
+          system("convert", *args)
+        end
       }
     ensure
       filename.unlink if filename.exist?
@@ -237,7 +268,9 @@ module Mimetype
   }
 
   def waveform_thumbnail(filename, thumb_filename, thumb_size, page, crop)
-#   mplayer -ao pcm:fast:file=blah
+    if to_s == "audio/x-ape"
+      return false
+    end
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-waveform.png"
@@ -246,7 +279,15 @@ module Mimetype
     File.open('/tmp/.waveform.lock','w') {|f|
       f.flock(File::LOCK_EX)
       secure_filename(filename){|sfn, uqsfn|
-        system("audiothumb", "-display", ":16", uqsfn, tmp_filename.to_s)
+        if ['audio/x-wav', 'audio/mpeg'].include?(to_s)
+          system("audiothumb", "-display", ":16", uqsfn, tmp_filename.to_s)
+        else
+          tmp2 = tmp_filename.to_s + ".wav"
+          system("mplayer", "-vc", "null", "-vo", "null",
+                 "-ao", "pcm:fast:file=#{tmp2}", uqsfn)
+          system("audiothumb", "-display", ":16", tmp2, tmp_filename.to_s)
+          File.unlink(tmp2) if File.exist?(tmp2)
+        end
       }
       f.flock(File::LOCK_UN)
     }
@@ -439,13 +480,19 @@ module Mimetype
       th_img.width, th_img.height)
       th_img.delete!(true)
     }
+    larger = [img.width, img.height].max.to_f
+    if larger > thumb_size
+      img.crop_scaled!(0,0, img.width, img.height,
+                       (img.width / larger) * thumb_size,
+                       (img.height / larger) * thumb_size)
+    end
     img.save(thumb_filename)
     FileUtils.rm_r(tmp_dir)
     true
   end
 
   def ffmpeg_thumbnail(filename, thumb_filename, thumb_size, page, crop)
-    ffmpeg = `which ffmpeg`.strip
+    ffmpeg = `which ffmpeg 2>/dev/null`.strip
     ffmpeg = "ffmpeg" if ffmpeg.empty?
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
@@ -466,8 +513,8 @@ module Mimetype
     video_cache_dir = tfn.dirname +
     "videotemp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}"
     video_cache_dir.mkdir_p
-    mplayer = `which mplayer32`.strip
-    mplayer = `which mplayer`.strip if mplayer.empty?
+    mplayer = `which mplayer32 2>/dev/null`.strip
+    mplayer = `which mplayer 2>/dev/null`.strip if mplayer.empty?
     mplayer = "mplayer" if mplayer.empty?
     fn = filename.to_pn
     aspect = fn.width / fn.height.to_f
