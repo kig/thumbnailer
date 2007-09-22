@@ -2,11 +2,12 @@
 
 url = "http://dark.fhtr.org/repos"
 libname = 'thumbnailer'
-version = Thumbnailer::VERSION
 
 $LOAD_PATH.unshift "lib"
 require './lib/#{libname}.rb'
 require 'fileutils'
+
+version = Thumbnailer::VERSION
 
 dn = "#{libname}-#{version}"
 FileUtils.mkdir(dn)
