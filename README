@@ -44,17 +44,23 @@ List of supported formats
     Most image formats. PSDs probably not too accurately.
     
     Successfully tested:
-      jpg, png, gif, psd, orf, nef, dng, crw, pef, tif, xpm, ppm, tga, svg
+      jpg, png, gif, svg,
+      orf, nef, dng, crw, arw, raf, pef, cr2,
+      tif, xpm, ppm, tga, pcx, bmp,
+      psd
 
     Uses image icon:
       xcf
+
+    Uses default icon:
+      ai, exr
 
 
   Videos
     Anything mplayer / ffmpeg can play.
     
     Successfully tested:
-      mkv, flv, avi, mpg, mov
+      mkv, flv, avi, mpg, mov, wmv, ogg
 
 
   Audio
@@ -81,16 +87,22 @@ List of supported formats
     uses yet another Xvfb server for it. See Requirements.
 
     Successfully tested:
-      pdf, html, ps, ps.gz, txt, sxi, ppt, odp
-  
+      pdf, html, ps, ps.gz, txt, sxi, odp, ppt, doc, xls
+
+    Uses default icon:
+      chm
+      
 
   Others
     Thumbnailer uses a mimetype-specific icon from its icons-directory.
     If there's an SVG icon, the SVG icon will be used. Otherwise a PNG icon
     will be used.
-    
+
     Successfully tested:
-      directory, bz2, torrent
+      directory, bz2, rar, tar.gz, ttf
+
+    Uses default icon:
+      sis, torrent, rb
 
 
 Requirements
