@@ -10,8 +10,8 @@ end
 if ARGV.size != 2
   puts "USAGE: audiothumb AUDIOFILE PNGFILE"
 else
-  tmpfile = ".audiofile-temp-#{Process.pid}-#{Time.now.to_f}.png"
-  tmpfile2 = ".audiofile-temp2-#{Process.pid}-#{Time.now.to_f}.png"
+  tmpfile = "/tmp/audiofile-temp-#{Process.pid}-#{Time.now.to_f}.png"
+  tmpfile2 = "/tmp/audiofile-temp2-#{Process.pid}-#{Time.now.to_f}.png"
   if display
     system("waveform", "-display", display, ARGV[0], tmpfile)
   else
