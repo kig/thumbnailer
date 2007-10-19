@@ -9,8 +9,6 @@
 # From an idea by Andrew McCall - <andrew@textux.com>
 # http://www.hackdiary.com/archives/000055.html
 
-ENV["DISPLAY"] = ":15"
-
 require 'gtk2'
 require 'gtkmozembed'
 require 'imlib2'
@@ -21,7 +19,7 @@ class MozSnapshooter < Gtk::Window
     super()
     self.title="MozSnapshooter"
     self.border_width = 1
-    Gtk::MozEmbed.set_profile_path(ENV['HOME'] + '.mozilla', 'RubyGecko')
+#     Gtk::MozEmbed.set_profile_path('/tmp/mozilla-profile-'+ENV['USER'].to_s, 'RubyGecko')
     self << Gtk::MozEmbed.new
     self.child.chrome_mask = Gtk::MozEmbed::ALLCHROME
     self.child.set_size_request(1024,1024)
@@ -43,7 +41,7 @@ class MozSnapshooter < Gtk::Window
     Gtk::timeout_add(1000) do
       @countdown -= 1
       if(@countdown > 0)
-        puts @countdown
+        STDERR.puts @countdown
         true
       else
         screenshot(@target)
@@ -62,26 +60,19 @@ class MozSnapshooter < Gtk::Window
     img.crop_scaled!(1, 1, 1024, 1024, 1024, 1024)
     img.save(target)
     img.delete!(true)
-    puts "Wrote #{target}"
+    STDERR.puts "Wrote #{target}"
   ensure
     Gtk.main_quit
   end
   
 end
 
-# Xvfb :15 -ac -screen 0 1280x1024x24
-File.open('/tmp/.moz-snapshooter.lock','w') {|f|
-  f.flock(File::LOCK_EX)
-  puts "MozSnapshooter called with #{ARGV.join(" ")}"
-  begin
-    ms = MozSnapshooter.new ARGV[0], ARGV[1]
-    Thread.new{ 
-      sleep(ARGV[0] =~ /^file:/ ? 15 : 30)
-      ms.screenshot
-      exit 
-    }
-    Gtk.main
-  ensure
-    f.flock(File::LOCK_UN)
-  end
+STDERR.puts "MozSnapshooter called with #{ARGV.join(" ")}"
+
+ms = MozSnapshooter.new ARGV[0], ARGV[1]
+Thread.new{
+  sleep(ARGV[0] =~ /^file:/ ? 60 : 180)
+  ms.screenshot
+  exit
 }
+Gtk.main

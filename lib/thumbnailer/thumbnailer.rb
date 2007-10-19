@@ -276,20 +276,16 @@ module Mimetype
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-waveform.png"
     tmp2_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-waveform2.png"
-    File.open('/tmp/.waveform.lock','w') {|f|
-      f.flock(File::LOCK_EX)
-      secure_filename(filename){|sfn, uqsfn|
-        if ['audio/x-wav', 'audio/mpeg'].include?(to_s)
-          system("audiothumb", "-display", ":16", uqsfn, tmp_filename.to_s)
-        else
-          tmp2 = tmp_filename.to_s + ".wav"
-          system("mplayer", "-vc", "null", "-vo", "null",
-                 "-ao", "pcm:fast:file=#{tmp2}", uqsfn)
-          system("audiothumb", "-display", ":16", tmp2, tmp_filename.to_s)
-          File.unlink(tmp2) if File.exist?(tmp2)
-        end
-      }
-      f.flock(File::LOCK_UN)
+    secure_filename(filename){|sfn, uqsfn|
+      if ['audio/x-wav', 'audio/mpeg'].include?(to_s)
+        system('xvfb-run', '-a', '-s', "-screen 0 514x514x24", "audiothumb", uqsfn, tmp_filename.to_s)
+      else
+        tmp2 = tmp_filename.to_s + ".wav"
+        system("mplayer", "-vc", "null", "-vo", "null",
+                "-ao", "pcm:fast:file=#{tmp2}", uqsfn)
+        system('xvfb-run', '-a', '-s', "-screen 0 514x514x24", "audiothumb", tmp2, tmp_filename.to_s)
+        File.unlink(tmp2) if File.exist?(tmp2)
+      end
     }
     rv = false
     if tmp_filename.exist?
@@ -401,7 +397,7 @@ module Mimetype
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-moz.png"
-    system('ruby',
+    system('xvfb-run', '-a', '-s', "-screen 0 1024x1024x24", 'ruby',
       File.join(File.dirname(__FILE__), 'moz-snapshooter.rb'),
       "file://" + File.expand_path(filename),
       tmp_filename.expand_path

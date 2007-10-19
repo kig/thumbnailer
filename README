@@ -68,8 +68,6 @@ List of supported formats
     
     The audio thumbnailing system is a wee bit peculiar. It relies
     on a Tcl/Tk app to create a waveform and spectrogram of the audio.
-    And that requires an X server, of which Xvfb is the best for this
-    purpose. See Requirements.
     
     Successfully tested:
       mp3, wav, m4a, flac, ra, ogg, wma
@@ -83,8 +81,7 @@ List of supported formats
     thumbnails the PDF. The PDF conversion requires ooffice for office
     documents.
     
-    The HTML thumbnailer uses GtkMozEmbed, which requires an X server. So it
-    uses yet another Xvfb server for it. See Requirements.
+    The HTML thumbnailer uses GtkMozEmbed.
 
     Successfully tested:
       pdf, html, ps, ps.gz, txt, sxi, odp, ppt, doc, xls
@@ -135,12 +132,6 @@ Requirements
 
   * You need unoconv for thumbnailing office documents:
     http://dag.wieers.com/home-made/unoconv/
-
-  * For HTML thumbnailing, you need an X server on display :15
-    - with Xvfb: Xvfb -ac -screen 0 1024x1024x24 :15
-
-  * For audio thumbnailing, you need an X server on display :16
-    - with Xvfb: Xvfb -ac -screen 0 514x514x24 :16
 
 
 Install
