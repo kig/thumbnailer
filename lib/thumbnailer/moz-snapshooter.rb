@@ -19,7 +19,7 @@ class MozSnapshooter < Gtk::Window
     super()
     self.title="MozSnapshooter"
     self.border_width = 1
-#     Gtk::MozEmbed.set_profile_path('/tmp/mozilla-profile-'+ENV['USER'].to_s, 'RubyGecko')
+    Gtk::MozEmbed.set_profile_path('/tmp/mozilla-profile-'+ENV['USER'].to_s, 'RubyGecko')
     self << Gtk::MozEmbed.new
     self.child.chrome_mask = Gtk::MozEmbed::ALLCHROME
     self.child.set_size_request(1024,1024)
@@ -30,7 +30,6 @@ class MozSnapshooter < Gtk::Window
 
     # The user is bored, let's quit.
     self.signal_connect("destroy") do
-      $stderr.print "closing...\n"
       Gtk.main_quit
     end
 
@@ -41,7 +40,6 @@ class MozSnapshooter < Gtk::Window
     Gtk::timeout_add(1000) do
       @countdown -= 1
       if(@countdown > 0)
-        STDERR.puts @countdown
         true
       else
         screenshot(@target)
@@ -60,14 +58,13 @@ class MozSnapshooter < Gtk::Window
     img.crop_scaled!(1, 1, 1024, 1024, 1024, 1024)
     img.save(target)
     img.delete!(true)
-    STDERR.puts "Wrote #{target}"
   ensure
     Gtk.main_quit
   end
   
 end
 
-STDERR.puts "MozSnapshooter called with #{ARGV.join(" ")}"
+ENV["LD_LIBRARY_PATH"] = "/usr/lib/firefox"
 
 ms = MozSnapshooter.new ARGV[0], ARGV[1]
 Thread.new{
