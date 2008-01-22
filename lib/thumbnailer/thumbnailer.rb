@@ -167,6 +167,7 @@ module Mimetype
     tmp_filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}#{tfn.extname}"
     if to_s =~ /^image/ and not to_s =~ /svg/
       begin
+        require 'imlib2'
         img = Imlib2::Image.load(filename.to_s)
         begin
           ow, oh = img.width, img.height
@@ -221,7 +222,7 @@ module Mimetype
     end
     filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}-src#{ex}"
     begin
-      FileUtils.ln_s(File.expand_path(original_filename.to_s), filename.to_s)
+      FileUtils.ln_s(File.expand_path(original_filename.to_s), File.expand_path(filename.to_s))
       filename.mimetype = self
       dims = filename.dimensions
       return false unless dims[0] and dims[1]
@@ -402,8 +403,11 @@ module Mimetype
       "file://" + File.expand_path(filename),
       tmp_filename.expand_path
     )
-    rv = Mimetype['image/png'].image_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-    tmp_filename.unlink if tmp_filename.exist?
+    rv = false
+    if tmp_filename.exist?
+      rv = Mimetype['image/png'].image_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
+      tmp_filename.unlink
+    end
     rv
   end
 
@@ -415,8 +419,11 @@ module Mimetype
       url.to_s,
       tmp_filename.expand_path
     )
-    rv = Mimetype['image/png'].image_thumbnail(tmp_filename.expand_path, thumb_filename, thumb_size, page, crop)
-    tmp_filename.unlink if tmp_filename.exist?
+    rv = false
+    if tmp_filename.exist?
+      rv = Mimetype['image/png'].image_thumbnail(tmp_filename.expand_path, thumb_filename, thumb_size, page, crop)
+      tmp_filename.unlink
+    end
     rv
   end
 
