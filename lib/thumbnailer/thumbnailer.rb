@@ -347,7 +347,7 @@ module Mimetype
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
     unless tmp_filename.exist?
       secure_filename(filename){|sfn, uqsfn|
-        system("unoconv -s #{sfn} > #{tmp_filename.to_s.dump}")
+        system("unoconv --stdout #{sfn} > #{tmp_filename.to_s.dump}")
       }
     end
     rv = false
@@ -423,7 +423,7 @@ module Mimetype
   def fancy_video_thumbnail(filename, thumb_filename, thumb_size, page)
     fn = filename.to_pn
     fn.mimetype = self
-    page ||= [[5.7, fn.length * 0.07].max, fn.length * 0.75].min
+    page ||= [[5.7, fn.length * 0.07].max, fn.length * 0.4].min
     thumb_size ||= 2048
     dims = fn.dimensions
     method = :mplayer_thumbnail
@@ -443,7 +443,23 @@ module Mimetype
       main_size = (dims[0] / dims[1].to_f) * thumb_size
     end
     __send__(method, fn, tmp_main, main_size, page, '0x0+0+0')
-    return false unless tmp_main.exist?
+    unless tmp_main.exist?
+      if method == :mplayer_thumbnail
+        method = :ffmpeg_thumbnail
+        __send__(method, fn, tmp_main, main_size, page, '0x0+0+0')
+      end
+      unless tmp_main.exist?
+        __send__(method, fn, tmp_main, main_size, 0, '0x0+0+0')
+      end
+      if not tmp_main.exist? and method == :ffmpeg_thumbnail
+        method = :mplayer_thumbnail
+        __send__(method, fn, tmp_main, main_size, 0, '0x0+0+0')
+      end
+      unless tmp_main.exist?
+        tmp_dir.rmtree
+        return false
+      end
+    end
     ctx = Imlib2::Context.get
     ctx.blend = false
     ctx.color = Imlib2::Color::TRANSPARENT
@@ -509,15 +525,15 @@ module Mimetype
     video_cache_dir = tfn.dirname +
     "videotemp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}"
     video_cache_dir.mkdir_p
-    mplayer = `which mplayer32 2>/dev/null`.strip
-    mplayer = `which mplayer 2>/dev/null`.strip if mplayer.empty?
+    mplayer = `which mplayer 2>/dev/null`.strip
     mplayer = "mplayer" if mplayer.empty?
     fn = filename.to_pn
     aspect = fn.width / fn.height.to_f
     secure_filename(filename){|sfn, uqsfn|
-      system(mplayer, "-really-quiet", "-aspect", aspect.to_s, "-nosound",
+      args = [mplayer, "-really-quiet", "-aspect", aspect.to_s, "-nosound",
               "-ss", page.to_s, "-vo", "jpeg:outdir=#{video_cache_dir}",
-              "-frames", "10", uqsfn)
+              "-frames", "2", uqsfn]
+      system(*args)
     }
     j = video_cache_dir.glob("*.jpg").sort.last
     Mimetype['image/jpeg'].image_thumbnail(j, thumb_filename, thumb_size, 0, crop) if j
