@@ -12,12 +12,21 @@ if { $argc != 2 && $argc != 1 } {
 
   set len [s length -unit SECONDS]
   set w [expr {int(($len / 300.0) * 512.0)}]
+  set h [expr {int((512.0 * (512.0 / $w)))}]
+  if { $w > 512 } {
+    set w [expr {512}]
+  }
+  if { $h > 512 } {
+    set h [expr {512}]
+  }
+  set wh [expr {int(($h * 0.25))}]
+  set sh [expr {$h - $wh}]
 
-  canvas .c -bg #000 -width $w -height 512
+  canvas .c -bg #000 -width $w -height $h
   pack .c
 
-  .c create waveform 0 0 -sound s -width $w -height 128 -fill #08B
-  .c create spectrogram 0 128 -sound s -width $w -height 384 -colormap $colormap
+  .c create waveform 0 0 -sound s -width $w -height $wh -fill #08B
+  .c create spectrogram 0 $wh -sound s -width $w -height $sh -colormap $colormap
   update
 
   if { $argc == 2 } {
