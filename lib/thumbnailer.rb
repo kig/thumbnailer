@@ -14,9 +14,10 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+was_disabled = GC.disable
 require 'thumbnailer/thumbnailer'
 
 module Thumbnailer
-  VERSION = "0.3"
+  VERSION = "0.4"
 end
+GC.enable unless was_disabled

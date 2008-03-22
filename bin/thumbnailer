@@ -16,14 +16,10 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-begin
-  require 'rubygems'
-rescue LoadError
-end
+GC.disable
 
 require 'optparse'
 require 'thumbnailer'
-
 
 options = {:crop => '0x0+0+0'}
 opts = OptionParser.new do |opts|

@@ -15,14 +15,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
-begin
-  require 'rubygems'
-rescue LoadError
-end
-
 require 'metadata'
-
 
 
 class Pathname
