@@ -21,6 +21,7 @@ require 'metadata'
 class Pathname
 
   def mkdir_p
+    require 'fileutils'
     FileUtils.mkdir_p(to_s)
   end
 
@@ -215,6 +216,7 @@ module Mimetype
     end
     filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}-src#{ex}"
     begin
+      require 'fileutils'
       FileUtils.ln_s(File.expand_path(original_filename.to_s), File.expand_path(filename.to_s))
       filename.mimetype = self
       dims = filename.dimensions
@@ -421,6 +423,7 @@ module Mimetype
   end
 
   def fancy_video_thumbnail(filename, thumb_filename, thumb_size, page)
+    require 'fileutils'
     fn = filename.to_pn
     fn.mimetype = self
     page ||= [[5.7, fn.length * 0.07].max, fn.length * 0.4].min
@@ -552,6 +555,7 @@ module Mimetype
   # This is needed because of filenames like "-h".
   #
   def secure_filename(fn)
+    require 'fileutils'
     filename = fn.to_s
     if filename =~ /^-/
       dirname = File.dirname(File.expand_path(filename))
