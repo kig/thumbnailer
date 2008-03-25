@@ -343,7 +343,7 @@ module Mimetype
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
     unless tmp_filename.exist?
       secure_filename(filename){|sfn, uqsfn|
-        system("unoconv --stdout #{sfn} > #{tmp_filename.to_s.dump}")
+        system("xvfb-run -a -s -screen 0 1024x1024x24 unoconv --stdout #{sfn} > #{tmp_filename.to_s.dump}")
       }
     end
     rv = false
