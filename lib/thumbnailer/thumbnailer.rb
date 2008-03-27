@@ -232,12 +232,14 @@ module Mimetype
       density = thumb_size / scale_fac
       secure_filename(filename){|sfn, uqsfn|
         if to_s =~ /svg/
-          args = ["-w", ((dims[0] / larger.to_f) * thumb_size).to_i.to_s,
-                  "-h", ((dims[1] / larger.to_f) * thumb_size).to_i.to_s,
-                  "-f", tmp_filename.extname == ".png" ? 'png' : 'jpeg',
+          args = [
                   uqsfn,
-                  tmp_filename.to_s]
-          system("rsvg", *args)
+                  "-w", ((dims[0] / larger.to_f) * thumb_size).to_i.to_s,
+                  "-h", ((dims[1] / larger.to_f) * thumb_size).to_i.to_s,
+                  "--export-png", tmp_filename.to_s + ".png",
+                  ]
+          system("inkscape", *args)
+          Mimetype['image/png'].image_thumbnail(tmp_filename.to_s+".png", tmp_filename.to_s, thumb_size, page, crop)
         else
           args = ["-density", density.to_s,
                   "#{uqsfn}[#{page}]",

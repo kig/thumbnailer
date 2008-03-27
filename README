@@ -113,6 +113,7 @@ Requirements
   * Tons of image converter programs and shared-mime-info.
     http://freedesktop.org/wiki/Software/shared-mime-info
     List of debian packages:
+      inkscape
       xvfb
       openoffice.org
       python-uno
