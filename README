@@ -125,7 +125,7 @@ Requirements
       mplayer
       ffmpeg
       libsnack2
-      poppler-utils (v0.6, http://poppler.freedesktop.org/)
+      poppler-utils (v0.6 or later, http://poppler.freedesktop.org/)
 
   * You need the latest version of dcraw to handle some camera raw images.
     http://cybercom.net/~dcoffin/dcraw/
