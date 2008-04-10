@@ -238,7 +238,7 @@ module Mimetype
                   "-h", ((dims[1] / larger.to_f) * thumb_size).to_i.to_s,
                   "--export-png", tmp_filename.to_s + ".png",
                   ]
-          system("inkscape", *args)
+          system("xvfb-run", "-a", "-s", "-screen 0 514x514x24", "inkscape", *args)
           Mimetype['image/png'].image_thumbnail(tmp_filename.to_s+".png", tmp_filename.to_s, thumb_size, page, crop)
         else
           args = ["-density", density.to_s,

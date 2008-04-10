@@ -119,7 +119,6 @@ Requirements
       python-uno
       libimlib2-ruby
       netpbm
-      librsvg2-bin
       paps
       gs-common
       imagemagick
