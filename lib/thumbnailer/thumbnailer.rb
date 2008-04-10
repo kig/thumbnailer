@@ -366,9 +366,9 @@ module Mimetype
               "-scale-to", thumb_size || 2048,
               "-f", page + 1,
               "-l", page + 1,
-              uqsfn]
+              sfn]
       ext = File.extname(thumb_filename.to_s)
-      args += ["|", PNMPROGS[ext], ">", thumb_filename.to_s.dump]
+      args += ["|", PNMPROGS[ext], ">", %Q('#{thumb_filename.to_s.gsub("'", "\\\\\'")}')]
       system("pdftoppm " + args.join(" "))
     }
     if File.exist?(thumb_filename) and File.size(thumb_filename) > 0
