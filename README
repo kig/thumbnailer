@@ -108,7 +108,7 @@ Requirements
   * Ruby 1.8
 
   * Metadata library for Ruby
-    http://dark.fhtr.org/repos/metadata
+    http://github.com/kig/metadata/tree/master
   
   * Tons of image converter programs and shared-mime-info.
     http://freedesktop.org/wiki/Software/shared-mime-info
