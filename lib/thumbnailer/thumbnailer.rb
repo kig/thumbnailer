@@ -269,7 +269,7 @@ module Mimetype
     if to_s == "audio/x-ape"
       return false
     end
-    tfn = thumb_filename.to_pn
+    tfn = thumb_filename.to_pn.expand_path
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-waveform.png"
     tmp2_filename = tfn.dirname +
@@ -288,8 +288,7 @@ module Mimetype
     rv = false
     if tmp_filename.exist?
       w,h = tmp_filename.dimensions
-      system("convert #{tmp_filename.to_s.dump} -crop #{w-2}x#{h-2}+1+1 #{
-              tmp2_filename.to_s.dump}")
+      system("convert", tmp_filename.to_s, "-crop", "#{w-2}x#{h-2}+1+1", tmp2_filename.to_s)
       rv = Mimetype['image/png'].image_thumbnail(tmp2_filename, thumb_filename,
                                                  thumb_size, page, crop)
       tmp_filename.unlink
@@ -304,7 +303,10 @@ module Mimetype
     charset = filename.to_pn.metadata['Doc.Charset']
     unless tmp_filename.exist?
       secure_filename(filename){|sfn, uqsfn|
-        system("iconv -f #{charset} -t utf8 #{sfn} | paps --font_scale 11 --columns 1 | ps2pdf - #{tmp_filename.to_s.dump}")
+        secure_filename(tmp_filename) {|tsfn, uqtsfn|
+          system("iconv -f #{charset} -t utf8 #{sfn} | paps --font='Monospace 11' --columns 1 | ps2pdf - #{tsfn}")
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+        }
       }
     end
     rv = false
@@ -329,7 +331,10 @@ module Mimetype
                 "cat "
                end
       secure_filename(filename){|sfn, uqsfn|
-        system("#{filter} #{sfn} | ps2pdf - #{tmp_filename.to_s.dump}")
+        secure_filename(tmp_filename){|tsfn, uqtsfn|
+          system("#{filter} #{sfn} | ps2pdf - #{tsfn}")
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+        }
       }
     end
     rv = false
@@ -345,7 +350,10 @@ module Mimetype
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
     unless tmp_filename.exist?
       secure_filename(filename){|sfn, uqsfn|
-        system("xvfb-run -a unoconv --stdout #{sfn} > #{tmp_filename.to_s.dump}")
+        secure_filename(tmp_filename){|tsfn, uqtsfn|
+          system("xvfb-run -a unoconv --stdout #{sfn} > #{tsfn}")
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+        }
       }
     end
     rv = false
@@ -383,7 +391,10 @@ module Mimetype
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-dcraw.ppm"
     secure_filename(filename){|sfn, uqsfn|
-      system("dcraw -c #{sfn} > #{tmp_filename.expand_path.to_s.dump}")
+      secure_filename(tmp_filename){|tsfn, uqtsfn|
+        system("dcraw -c #{sfn} > #{tsfn}")
+        FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+      }
     }
     rv = Mimetype['image/x-portable-pixmap'].image_thumbnail(tmp_filename,
            thumb_filename, thumb_size, page, crop)
@@ -515,7 +526,10 @@ module Mimetype
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-ffmpeg.png"
     secure_filename(filename){|sfn, uqsfn|
-      `ffmpeg -i #{sfn} -vcodec png -f rawvideo -ss  #{page.to_s} -r 1 -an -vframes 1 -y #{tmp_filename.to_s.dump} 2>/dev/null`
+      secure_filename(tmp_filename){|tsfn, uqtsfn|
+        `ffmpeg -i #{sfn} -vcodec png -f rawvideo -ss  #{page.to_s} -r 1 -an -vframes 1 -y #{tsfn} 2>/dev/null`
+        FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn)
+      }
     }
     if tmp_filename.exist?
       Mimetype['image/png'].image_thumbnail(tmp_filename, thumb_filename,
