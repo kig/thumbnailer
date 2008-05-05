@@ -305,7 +305,7 @@ module Mimetype
       secure_filename(filename){|sfn, uqsfn|
         secure_filename(tmp_filename) {|tsfn, uqtsfn|
           system("iconv -f #{charset} -t utf8 #{sfn} | paps --font='Monospace 11' --columns 1 | ps2pdf - #{tsfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and uqtsfn != tmp_filename
         }
       }
     end
@@ -333,7 +333,7 @@ module Mimetype
       secure_filename(filename){|sfn, uqsfn|
         secure_filename(tmp_filename){|tsfn, uqtsfn|
           system("#{filter} #{sfn} | ps2pdf - #{tsfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and uqtsfn != tmp_filename
         }
       }
     end
@@ -352,7 +352,7 @@ module Mimetype
       secure_filename(filename){|sfn, uqsfn|
         secure_filename(tmp_filename){|tsfn, uqtsfn|
           system("xvfb-run -a unoconv --stdout #{sfn} > #{tsfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and uqtsfn != tmp_filename
         }
       }
     end
@@ -393,7 +393,7 @@ module Mimetype
     secure_filename(filename){|sfn, uqsfn|
       secure_filename(tmp_filename){|tsfn, uqtsfn|
         system("dcraw -c #{sfn} > #{tsfn}")
-        FileUtils.mv(uqtsfn, tmp_filename) if File.exist? uqtsfn
+        FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and uqtsfn != tmp_filename
       }
     }
     rv = Mimetype['image/x-portable-pixmap'].image_thumbnail(tmp_filename,
