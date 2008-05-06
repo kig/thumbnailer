@@ -528,7 +528,7 @@ module Mimetype
     secure_filename(filename){|sfn, uqsfn|
       secure_filename(tmp_filename){|tsfn, uqtsfn|
         `ffmpeg -i #{sfn} -vcodec png -f rawvideo -ss  #{page.to_s} -r 1 -an -vframes 1 -y #{tsfn} 2>/dev/null`
-        FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn)
+        FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and File.expand_path(uqtsfn.to_s) != File.expand_path(tmp_filename.to_s)
       }
     }
     if tmp_filename.exist?
