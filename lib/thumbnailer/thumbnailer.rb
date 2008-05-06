@@ -239,7 +239,10 @@ module Mimetype
                   "--export-png", tmp_filename.to_s + ".png",
                   ]
           system("xvfb-run", "-a", "-s", "-screen 0 514x514x24", "inkscape", *args)
-          Mimetype['image/png'].image_thumbnail(tmp_filename.to_s+".png", tmp_filename.to_s, thumb_size, page, crop)
+          if File.exist?(tmp_filename.to_s+".png")
+            Mimetype['image/png'].image_thumbnail(tmp_filename.to_s+".png", tmp_filename.to_s, thumb_size, page, crop)
+            File.unlink(tmp_filename.to_s+".png")
+          end
         else
           args = ["-density", density.to_s,
                   "#{uqsfn}[#{page}]",
