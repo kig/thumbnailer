@@ -37,9 +37,9 @@ extend self
 
   attr_accessor :verbose, :quiet, :icon_dir, :keep_temp
 
-  def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0')
+  def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
     mt = filename.to_pn.mimetype
-    mt.thumbnail(filename.to_s, thumbnail_filename, size, page, crop)
+    mt.thumbnail(filename.to_s, thumbnail_filename, size, page, crop, icon_fallback)
   end
 
 end
@@ -91,7 +91,7 @@ module Mimetype
   #   pdf.create_tiles    # (256, 1024, [3,4]){|pg,x,y| "#{pg}_#{y}_#{x}.png" }
   #
   def thumbnail(filename, thumb_filename,
-                thumb_size=nil, page=nil, crop='0x0+0+0')
+                thumb_size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
     # puts "called thumbnail for #{filename} (#{to_s})"
     begin
       if to_s =~ /video|matroska|realmedia/
@@ -127,7 +127,7 @@ module Mimetype
     rescue Exception => e
       puts e, e.message, e.backtrace
       false
-    end or icon_thumbnail(filename, thumb_filename, thumb_size, crop)
+    end or (icon_fallback && icon_thumbnail(filename, thumb_filename, thumb_size, crop))
   end
 
   def icon_thumbnail(filename, thumb_filename, thumb_size, crop='0x0+0+0')
