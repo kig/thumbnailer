@@ -38,7 +38,7 @@ opts = OptionParser.new do |opts|
     options[:crop] = p
   }
   opts.on("-n", "--no-icon", "Don't use icon fallback."){|p|
-    options[:no_icon] = p
+    options[:no_icon] = true
   }
   opts.on("-p", "--page PAGENUM", Integer, "Page to thumbnail (time for videos)"){|p|
     options[:page] = (p =~ /\./ ? p.to_f : p.to_i)
