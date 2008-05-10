@@ -246,9 +246,11 @@ module Mimetype
         else
           args = ["-density", density.to_s,
                   "#{uqsfn}[#{page}]",
-                  "-scale", "#{thumb_size}x#{thumb_size}",
-                  "-crop", crop.to_s,
-                  tmp_filename.to_s]
+                  "-scale", "#{thumb_size}x#{thumb_size}"]
+          if crop and crop.to_s != '0x0+0+0'
+            args << "-crop" << crop.to_s
+          end
+          args << tmp_filename.to_s
           system("convert", *args)
         end
       }
