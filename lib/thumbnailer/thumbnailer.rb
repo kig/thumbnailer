@@ -1,16 +1,16 @@
 #   Thumbnailer - create thumbnails of files.
 #   Copyright (C) 2007 Ilmari Heikkinen
-# 
+#
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation, either version 3 of the License, or
 #   (at your option) any later version.
-# 
+#
 #   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-# 
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -86,7 +86,7 @@ module Mimetype
   #
   #
   # Or just:
-  # 
+  #
   #   pdf = 'gsp0606.pdf'.to_pn
   #   pdf.create_tiles    # (256, 1024, [3,4]){|pg,x,y| "#{pg}_#{y}_#{x}.png" }
   #
@@ -111,6 +111,9 @@ module Mimetype
       elsif to_s =~ /image/
         page ||= 0
         image_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+      elsif to_s =~ /[-\/]dvi$/
+        page ||= 0
+        dvi_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /postscript/
         page ||= 0
         postscript_thumbnail(filename, thumb_filename, thumb_size, page, crop)
@@ -264,7 +267,7 @@ module Mimetype
       false
     end
   end
-  
+
   PNMPROGS = {
     ".jpg" => "pnmtojpeg",
     ".png" => "pnmtopng"
@@ -349,7 +352,27 @@ module Mimetype
     end
     rv
   end
-  
+
+  def dvi_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+    tfn = filename.to_pn
+    tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
+    charset = filename.to_pn.metadata['Doc.Charset']
+    unless tmp_filename.exist?
+      secure_filename(filename){|sfn, uqsfn|
+        secure_filename(tmp_filename){|tsfn, uqtsfn|
+          system("dvipdfm -o #{tsfn} #{sfn}")
+          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and File.expand_path(uqtsfn.to_s) != File.expand_path(tmp_filename.to_s)
+        }
+      }
+    end
+    rv = false
+    if tmp_filename.exist?
+      rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
+      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
+    end
+    rv
+  end
+
   def unoconv_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     tfn = filename.to_pn
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
@@ -368,11 +391,11 @@ module Mimetype
     end
     rv
   end
-  
+
   def pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     w,h,x,y = crop.scan(/[+-]?[0-9]+/).map{|i|i.to_i}
     secure_filename(filename){|sfn, uqsfn|
-      args = ["-x", x, 
+      args = ["-x", x,
               "-y", y,
               "-W", w,
               "-H", h,
@@ -406,7 +429,7 @@ module Mimetype
     tmp_filename.unlink if tmp_filename.exist?
     rv
   end
-  
+
   def html_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
@@ -567,7 +590,7 @@ module Mimetype
 
 
   # If the filename doesn't begin with a dash, passes it in
-  # double-quotes with double-quotes and dollar signs in 
+  # double-quotes with double-quotes and dollar signs in
   # filename escaped.
   #
   # Otherwise creates a link to it with a secure filename and yield the secure
