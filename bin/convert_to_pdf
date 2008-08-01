@@ -1,0 +1,38 @@
+#!/usr/bin/ruby
+
+GC.disable
+
+require 'thumbnailer'
+
+usage = "#{$0} SRC DST"
+if ARGV.size != 2 || !File.exist?(ARGV[0])
+  STDERR.puts usage
+  exit 1
+end
+src,dst = ARGV[0,2]
+
+mt = src.to_pn.mimetype
+converter = case mt.to_s
+when /[-\/]dvi$/
+  "dvi"
+when /postscript/
+  "postscript"
+when /^text/
+  "text"
+when /powerpoint|vnd\.oasis\.opendocument|msword|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
+  "unoconv"
+else
+  nil
+end
+
+unless converter
+  STDERR.puts "No converter found for #{src} (#{mt}) -> #{dst}"
+  exit 2
+end
+
+mt.__send__(converter + "_to_pdf", src, dst)
+
+unless File.exist?(dst)
+  STDERR.puts "Conversion failed for #{src} (#{mt}) -> #{dst}"
+  exit 4
+end

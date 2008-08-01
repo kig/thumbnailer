@@ -119,7 +119,7 @@ module Mimetype
         postscript_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /^text/
         page ||= 0
-        paps_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+        text_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /powerpoint|vnd\.oasis\.opendocument|msword|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
         page ||= 0
         unoconv_thumbnail(filename, thumb_filename, thumb_size, page, crop)
@@ -305,18 +305,55 @@ module Mimetype
     rv
   end
 
-  def paps_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+  def cond_mv(src, dst)
+    FileUtils.mv(src, dst) if File.exist?(src) and
+      File.expand_path(src.to_s) != File.expand_path(dst.to_s)
+  end
+
+  def text_to_pdf(filename, pdf_filename)
+    charset = filename.to_pn.metadata['Doc.Charset']
+    secure_filename(filename){|sfn, uqsfn|
+      secure_filename(pdf_filename) {|tsfn, uqtsfn|
+        system("iconv -f #{charset} -t utf8 #{sfn} | " +
+               "paps --font='Monospace 11' --columns 1 | ps2pdf - #{tsfn}")
+        cond_mv(uqtsfn, pdf_filename)
+      }
+    }
+  end
+
+  COMPRESSION_FILTERS = {'.gz' => 'zcat', '.bz2' => 'bzcat'}
+  def postscript_to_pdf(filename, pdf_filename)
+    filter = COMPRESSION_FILTERS[File.extname(filename.to_s)] || "cat"
+    secure_filename(filename){|sfn, uqsfn|
+      secure_filename(pdf_filename){|tsfn, uqtsfn|
+        system("#{filter} #{sfn} | ps2pdf - #{tsfn}")
+        cond_mv(uqtsfn, pdf_filename)
+      }
+    }
+  end
+
+  def dvi_to_pdf(filename, pdf_filename)
+    secure_filename(filename){|sfn, uqsfn|
+      secure_filename(pdf_filename){|tsfn, uqtsfn|
+        system("dvipdfm -o #{tsfn} #{sfn}")
+        cond_mv(uqtsfn, pdf_filename)
+      }
+    }
+  end
+
+  def unoconv_to_pdf(filename, pdf_filename)
+    secure_filename(filename){|sfn, uqsfn|
+      secure_filename(pdf_filename){|tsfn, uqtsfn|
+        system("xvfb-run -a unoconv --stdout #{sfn} > #{tsfn}")
+        cond_mv(uqtsfn, pdf_filename)
+      }
+    }
+  end
+
+  def pdf_convert_thumbnail(method, filename, thumb_filename, thumb_size, page, crop)
     tfn = filename.to_pn
     tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
-    charset = filename.to_pn.metadata['Doc.Charset']
-    unless tmp_filename.exist?
-      secure_filename(filename){|sfn, uqsfn|
-        secure_filename(tmp_filename) {|tsfn, uqtsfn|
-          system("iconv -f #{charset} -t utf8 #{sfn} | paps --font='Monospace 11' --columns 1 | ps2pdf - #{tsfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and File.expand_path(uqtsfn.to_s) != File.expand_path(tmp_filename.to_s)
-        }
-      }
-    end
+    __send__(method, filename, tmp_filename) unless tmp_filename.exist?
     rv = false
     if tmp_filename.exist?
       rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
@@ -325,72 +362,13 @@ module Mimetype
     rv
   end
 
-  def postscript_thumbnail(filename, thumb_filename, thumb_size, page, crop)
-    tfn = filename.to_pn
-    tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
-    charset = filename.to_pn.metadata['Doc.Charset']
-    unless tmp_filename.exist?
-      filter = case File.extname(filename.to_s)
-               when '.gz'
-                "zcat "
-               when '.bz2'
-                "bzcat "
-               else
-                "cat "
-               end
-      secure_filename(filename){|sfn, uqsfn|
-        secure_filename(tmp_filename){|tsfn, uqtsfn|
-          system("#{filter} #{sfn} | ps2pdf - #{tsfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and File.expand_path(uqtsfn.to_s) != File.expand_path(tmp_filename.to_s)
-        }
-      }
-    end
-    rv = false
-    if tmp_filename.exist?
-      rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
-    end
-    rv
-  end
-
-  def dvi_thumbnail(filename, thumb_filename, thumb_size, page, crop)
-    tfn = filename.to_pn
-    tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
-    charset = filename.to_pn.metadata['Doc.Charset']
-    unless tmp_filename.exist?
-      secure_filename(filename){|sfn, uqsfn|
-        secure_filename(tmp_filename){|tsfn, uqtsfn|
-          system("dvipdfm -o #{tsfn} #{sfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and File.expand_path(uqtsfn.to_s) != File.expand_path(tmp_filename.to_s)
-        }
-      }
-    end
-    rv = false
-    if tmp_filename.exist?
-      rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
-    end
-    rv
-  end
-
-  def unoconv_thumbnail(filename, thumb_filename, thumb_size, page, crop)
-    tfn = filename.to_pn
-    tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
-    unless tmp_filename.exist?
-      secure_filename(filename){|sfn, uqsfn|
-        secure_filename(tmp_filename){|tsfn, uqtsfn|
-          system("xvfb-run -a unoconv --stdout #{sfn} > #{tsfn}")
-          FileUtils.mv(uqtsfn, tmp_filename) if File.exist?(uqtsfn) and File.expand_path(uqtsfn.to_s) != File.expand_path(tmp_filename.to_s)
-        }
-      }
-    end
-    rv = false
-    if tmp_filename.exist?
-      rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
-      tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
-    end
-    rv
-  end
+  %w(text postscript dvi unoconv).each{|m|
+    module_eval <<-EOF
+      def #{m}_thumbnail(*a)
+        pdf_convert_thumbnail(#{"#{m}_to_pdf".dump}, *a)
+      end
+    EOF
+  }
 
   def pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
     w,h,x,y = crop.scan(/[+-]?[0-9]+/).map{|i|i.to_i}
