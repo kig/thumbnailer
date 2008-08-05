@@ -2,17 +2,17 @@
 
 #   Thumbnailer - create thumbnails of files.
 #   Copyright (C) 2007 Ilmari Heikkinen
-# 
+#
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
 #   the Free Software Foundation, either version 3 of the License, or
 #   (at your option) any later version.
-# 
+#
 #   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
-# 
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,9 +23,10 @@ require 'thumbnailer'
 
 options = {:crop => '0x0+0+0'}
 opts = OptionParser.new do |opts|
-  opts.banner = "#{$0} [options] input_filename thumbnail_filename"
+  opts.banner = "USAGE: #{$0} [options] input_filename thumbnail_filename"
 
   opts.separator ""
+  opts.on("-h", "--help", "Show this message"){ puts opts.help; exit!(0) }
   opts.on("-s", "--size SIZE", Integer, "Max dimension of output image"){|p|
     options[:size] = p.to_i
   }
@@ -48,7 +49,15 @@ opts = OptionParser.new do |opts|
   opts.on("-v", "Verbose output to stderr"){|p| Thumbnailer.verbose = true }
 end
 
-opts.parse!(ARGV)
+
+begin
+  opts.parse!(ARGV)
+rescue => e
+  STDERR.puts e.message
+  STDERR.puts opts.help
+  exit!(1)
+end
+
 filenames = ARGV
 
 if filenames.size != 2
