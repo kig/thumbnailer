@@ -449,7 +449,7 @@ module Mimetype
     thumb_size ||= 2048
     dims = fn.dimensions
     method = :mplayer_thumbnail
-    if to_s =~ /flash/
+    if to_s =~ /flash/ || to_s == 'video/mp4'
       method = :ffmpeg_thumbnail
     end
     tfn = thumb_filename.to_pn
