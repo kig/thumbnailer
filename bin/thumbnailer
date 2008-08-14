@@ -70,7 +70,7 @@ end
 
 infile, outfile = ARGV[0,2]
 
-if File.exist?(infile) && !options[:allow_inexisting]
+if File.exist?(infile) || options[:allow_inexisting]
   if options[:input_type]
     mt = Mimetype[options[:input_type]]
   else

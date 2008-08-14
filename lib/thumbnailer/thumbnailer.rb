@@ -38,8 +38,11 @@ extend self
   attr_accessor :verbose, :quiet, :icon_dir, :keep_temp
 
   def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
+    nt = Metadata.no_text
+    Metadata.no_text = true
     mt = filename.to_pn.mimetype
     mt.thumbnail(filename.to_s, thumbnail_filename, size, page, crop, icon_fallback)
+    Metadata.no_text = nt
   end
 
 end
