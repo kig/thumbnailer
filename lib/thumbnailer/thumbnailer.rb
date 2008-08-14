@@ -128,9 +128,24 @@ module Mimetype
         waveform_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       end
     rescue Exception => e
-      puts e, e.message, e.backtrace
+      unless Thumbnailer.quiet
+        STDERR.puts "Failed to thumbnail #{filename}#{", falling back to icon" if icon_fallback}"
+        if Thumbnailer.verbose
+          STDERR.puts e, e.message, e.backtrace
+        end
+      end
       false
     end or (icon_fallback && icon_thumbnail(filename, thumb_filename, thumb_size, crop))
+  rescue Exception => e
+    unless Thumbnailer.quiet
+      if icon_fallback
+        STDERR.puts "Failed to thumbnail and iconize #{filename}"
+      end
+      if Thumbnailer.verbose
+        STDERR.puts e, e.message, e.backtrace
+      end
+    end
+    false
   end
 
   def icon_thumbnail(filename, thumb_filename, thumb_size, crop='0x0+0+0')
