@@ -44,6 +44,9 @@ opts = OptionParser.new do |opts|
   opts.on("-p", "--page PAGENUM", Integer, "Page to thumbnail (time for videos)"){|p|
     options[:page] = (p =~ /\./ ? p.to_f : p.to_i)
   }
+  opts.on("--inexisting", "Try thumbnailing even if the file doesn't exist"){
+    options[:allow_inexisting] = true
+  }
   opts.on("-k", "--keep-temp", "Don't delete temp PDF files"){|p| Thumbnailer.keep_temp = true }
   opts.on("-q", "Don't print error messages"){|p| Thumbnailer.quiet = true }
   opts.on("-v", "Verbose output to stderr"){|p| Thumbnailer.verbose = true }
@@ -67,12 +70,16 @@ end
 
 infile, outfile = ARGV[0,2]
 
-if options[:input_type]
-  mt = Mimetype[options[:input_type]]
+if File.exist?(infile) && !options[:allow_inexisting]
+  if options[:input_type]
+    mt = Mimetype[options[:input_type]]
+  else
+    mt = infile.to_pn.mimetype
+  end
+  mt.thumbnail(
+    infile, outfile, options[:size], options[:page], options[:crop], !options[:no_icon]
+  )
 else
-  mt = infile.to_pn.mimetype
+  STDERR.puts("File does not exist: #{infile}") unless Thumbnailer.quiet
+  exit!(2)
 end
-
-mt.thumbnail(
-  infile, outfile, options[:size], options[:page], options[:crop], !options[:no_icon]
-)
