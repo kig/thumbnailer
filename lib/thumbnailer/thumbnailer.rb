@@ -364,6 +364,8 @@ module Mimetype
     secure_filename(filename){|sfn, uqsfn|
       secure_filename(pdf_filename){|tsfn, uqtsfn|
         system("xvfb-run -a unoconv -s -screen 0 800x600x24 --stdout #{sfn} > #{tsfn}")
+        File.unlink(uqtsfn) if File.exist?(uqtsfn) and
+                               File.open(uqtsfn){|f| f.read(0,80) =~ /^\s*Error/ }
         cond_mv(uqtsfn, pdf_filename)
       }
     }
