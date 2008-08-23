@@ -30,9 +30,8 @@ unless converter
   exit 2
 end
 
-# unoconv fails occasionally so we need to have some play :(
 tries = 3
-while tries > 1
+while tries > 0
   tries -= 1
   mt.__send__(converter + "_to_pdf", src, dst)
   break if File.exist?(dst) and File.size(dst) > 0
