@@ -325,7 +325,8 @@ module Mimetype
 
   def cond_mv(src, dst)
     FileUtils.mv(src, dst) if File.exist?(src) and
-      File.expand_path(src.to_s) != File.expand_path(dst.to_s)
+      File.expand_path(src.to_s) != File.expand_path(dst.to_s) and
+      File.size(src) > 0
   end
 
   def text_to_pdf(filename, pdf_filename)
@@ -362,7 +363,7 @@ module Mimetype
   def unoconv_to_pdf(filename, pdf_filename)
     secure_filename(filename){|sfn, uqsfn|
       secure_filename(pdf_filename){|tsfn, uqtsfn|
-        system("xvfb-run -a unoconv --stdout #{sfn} > #{tsfn}")
+        system("xvfb-run -a unoconv -s -screen 0 800x600x24 --stdout #{sfn} > #{tsfn}")
         cond_mv(uqtsfn, pdf_filename)
       }
     }

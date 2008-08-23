@@ -30,9 +30,17 @@ unless converter
   exit 2
 end
 
-mt.__send__(converter + "_to_pdf", src, dst)
+# unoconv fails occasionally so we need to have some play :(
+tries = 3
+while tries > 1
+  tries -= 1
+  mt.__send__(converter + "_to_pdf", src, dst)
+  break if File.exist?(dst) and File.size(dst) > 0
+  STDERR.puts "Failed to convert #{src} to #{dst}, retrying."
+end
 
-unless File.exist?(dst)
+if !File.exist?(dst) or File.size(dst) == 0
+  File.unlink(dst) if File.exist?(dst)
   STDERR.puts "Conversion failed for #{src} (#{mt}) -> #{dst}"
   exit 4
 end
