@@ -363,9 +363,12 @@ module Mimetype
   def unoconv_to_pdf(filename, pdf_filename)
     secure_filename(filename){|sfn, uqsfn|
       secure_filename(pdf_filename){|tsfn, uqtsfn|
-        system("xvfb-run -a -s '-screen 0 800x600x24' unoconv --stdout #{sfn} > #{tsfn}")
-        File.unlink(uqtsfn) if File.exist?(uqtsfn) and
-                               File.open(uqtsfn){|f| f.read(80) =~ /^\s*Error/ }
+        system("xvfb-run -a unoconv -f pdf --stdout #{sfn} > #{tsfn}")
+        if File.exist?(uqtsfn) and File.size(uqtsfn) < 4096
+          if File.read(uqtsfn).strip =~ /The provided document cannot be converted to the desired format.\Z/
+            File.unlink(uqtsfn)
+          end
+        end
         cond_mv(uqtsfn, pdf_filename)
       }
     }
