@@ -24,7 +24,7 @@ check("ps2pdf", "-h", "ghostscript", 1)
 check("unoconv", "-h", "python-uno (and unoconv)", 1)
 check("xvfb-run", "-h", "xvfb", 0)
 
-check("ruby -rgtkmozembed", "-e nil", "libgtk-mozembed-ruby1.8") 
+check("xvfb-run -a ruby -rgtkmozembed", "-e nil", "libgtk-mozembed-ruby1.8")
 check("ruby -rimlib2", "-e nil", "libimlib2-ruby") 
 
 
