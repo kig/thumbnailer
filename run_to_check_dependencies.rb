@@ -11,9 +11,9 @@ def check(name, args, deb_package, expected = 0)
   $missing << [name, deb_package] if $?.exitstatus != expected 
 end
 
-check("convert", "-help", "graphicsmagick-imagemagick-compat", 1)
+check("convert", "-help", "imagemagick", 0)
 check("dcraw", "-v", "dcraw", 1)
-check("ffmpeg", "-h", "ffmpeg", 1)
+check("ffmpeg", "-h", "ffmpeg", 0)
 check("firefox", "-h", "firefox", 0)
 check("inkscape", "--help", "inkscape", 0)
 check("test -n $(echo 'package require snack' | tclsh)", "", "libsnack2", 0)
