@@ -1,6 +1,17 @@
 #!/usr/bin/ruby
-require 'rubygems'
-require 'id3lib'
+retried = false
+begin
+  require 'id3lib'
+rescue LoadError => e
+  raise if retried
+  retried = true
+  begin
+    require 'rubygems'
+  rescue LoadError
+    raise e
+  end
+  retry
+end
 
 def extract_pic(filename)
   t = ID3Lib::Tag.new(filename)
