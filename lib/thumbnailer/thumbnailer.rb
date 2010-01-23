@@ -305,8 +305,13 @@ module Mimetype
         system('xvfb-run', '-a', '-s', "-screen 0 514x514x24", "audiothumb", uqsfn, tmp_filename.to_s)
       else
         tmp2 = tmp_filename.to_s + ".wav"
-        system("mplayer", "-vc", "null", "-vo", "null",
-                "-ao", "pcm:fast:file=#{tmp2}", uqsfn)
+        if ["audio/x-mod", "audio/x-xm", "audio/x-it", "audio/x-s3m", "audio/x-stm"].include?(to_s)
+          system("mikmod", "-X", "-q", "-d", "3,file=#{tmp2}", uqsfn)
+        elsif "audio/prs.sid" == to_s
+          system("sid2wav", "-t180", uqsfn, tmp2)
+        else
+          system("mplayer", "-vc", "null", "-vo", "null", "-ao", "pcm:fast:file=#{tmp2}", uqsfn)
+        end
         system('xvfb-run', '-a', '-s', "-screen 0 514x514x24", "audiothumb", tmp2, tmp_filename.to_s)
         File.unlink(tmp2) if File.exist?(tmp2)
       end
