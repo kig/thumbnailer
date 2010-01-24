@@ -39,10 +39,13 @@ extend self
 
   def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
     nt = Metadata.no_text
+    gm = Metadata.guess_metadata
     Metadata.no_text = true
+    Metadata.guess_metadata = false
     mt = filename.to_pn.mimetype
     mt.thumbnail(filename.to_s, thumbnail_filename, size, page, crop, icon_fallback)
     Metadata.no_text = nt
+    Metadata.guess_metadata = gm
   end
 
 end
@@ -254,12 +257,12 @@ module Mimetype
       secure_filename(filename){|sfn, uqsfn|
         if to_s =~ /svg/
           args = [
-                  uqsfn,
+                  "-a", "-f", "png",
                   "-w", ((dims[0] / larger.to_f) * thumb_size).to_i.to_s,
                   "-h", ((dims[1] / larger.to_f) * thumb_size).to_i.to_s,
-                  "--export-png", tmp_filename.to_s + ".png",
+                  "-o", tmp_filename.to_s + ".png", uqsfn
                   ]
-          system("xvfb-run", "-a", "-s", "-screen 0 514x514x24", "inkscape", *args)
+          system("rsvg-convert", *args)
           if File.exist?(tmp_filename.to_s+".png")
             Mimetype['image/png'].image_thumbnail(tmp_filename.to_s+".png", tmp_filename.to_s, thumb_size, page, crop)
             File.unlink(tmp_filename.to_s+".png")
