@@ -39,13 +39,10 @@ extend self
 
   def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
     nt = Metadata.no_text
-    gm = Metadata.guess_metadata
     Metadata.no_text = true
-    Metadata.guess_metadata = false
     mt = filename.to_pn.mimetype
     mt.thumbnail(filename.to_s, thumbnail_filename, size, page, crop, icon_fallback)
     Metadata.no_text = nt
-    Metadata.guess_metadata = gm
   end
 
 end
@@ -257,12 +254,12 @@ module Mimetype
       secure_filename(filename){|sfn, uqsfn|
         if to_s =~ /svg/
           args = [
-                  "-a", "-f", "png",
+                  uqsfn,
                   "-w", ((dims[0] / larger.to_f) * thumb_size).to_i.to_s,
                   "-h", ((dims[1] / larger.to_f) * thumb_size).to_i.to_s,
-                  "-o", tmp_filename.to_s + ".png", uqsfn
+                  "--export-png", tmp_filename.to_s + ".png",
                   ]
-          system("rsvg-convert", *args)
+          system("xvfb-run", "-a", "-s", "-screen 0 514x514x24", "inkscape", *args)
           if File.exist?(tmp_filename.to_s+".png")
             Mimetype['image/png'].image_thumbnail(tmp_filename.to_s+".png", tmp_filename.to_s, thumb_size, page, crop)
             File.unlink(tmp_filename.to_s+".png")
@@ -444,8 +441,7 @@ module Mimetype
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname +
     "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-moz.png"
-    system('xvfb-run', '-a', '-s', "-screen 0 1024x1024x24", 'ruby',
-      File.join(File.dirname(__FILE__), 'moz-snapshooter.rb'),
+    system('xvfb-run', '-a', '-s', "-screen 0 512x512x24", 'qwebthumb',
       "file://" + File.expand_path(filename),
       tmp_filename.expand_path
     )
