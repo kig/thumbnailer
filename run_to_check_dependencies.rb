@@ -25,8 +25,6 @@ check("xvfb-run", "-h", "xvfb", 0)
 
 check("ruby -rimlib2", "-e nil", "libimlib2-ruby") 
 
-
-
 $missing.each{|name, pkg| out.puts "Missing #{name} to be found in #{pkg}." }
 out.puts "All dependencies found." if $missing.empty?
 
