@@ -459,8 +459,7 @@ module Mimetype
   def web_thumbnail(url, thumb_filename, thumb_size=nil, page=0, crop='0x0+0+0')
     tfn = thumb_filename.to_pn
     tmp_filename = tfn.dirname + "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-moz.png"
-    system('ruby',
-      File.join(File.dirname(__FILE__), 'moz-snapshooter.rb'),
+    system('xvfb-run', '-a', '-s', "-screen 0 512x512x24", 'qwebthumb',
       url.to_s,
       tmp_filename.expand_path
     )
