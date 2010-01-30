@@ -126,6 +126,9 @@ module Mimetype
       elsif to_s =~ /^text/
         page ||= 0
         text_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+      elsif to_s == "application/x-shockwave-flash"
+        page = 0
+        swf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /powerpoint|vnd\.oasis\.opendocument|msword|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
         page ||= 0
         unoconv_thumbnail(filename, thumb_filename, thumb_size, page, crop)
@@ -437,6 +440,22 @@ module Mimetype
     rv = Mimetype['image/x-portable-pixmap'].image_thumbnail(tmp_filename,
            thumb_filename, thumb_size, page, crop)
     tmp_filename.unlink if tmp_filename.exist?
+    rv
+  end
+
+  def swf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+    tfn = thumb_filename.to_pn
+    tmp_filename = tfn.dirname +
+    "tmp-#{Process.pid}-#{Thread.current.object_id}-#{Time.now.to_f}-swfdec.png"
+    system('swfdec-thumbnailer', '-s', thumb_size.to_s,
+      File.expand_path(filename),
+      tmp_filename.expand_path
+    )
+    rv = false
+    if tmp_filename.exist?
+      rv = Mimetype['image/png'].image_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
+      tmp_filename.unlink
+    end
     rv
   end
 
