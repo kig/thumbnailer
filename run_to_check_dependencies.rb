@@ -23,7 +23,7 @@ check("ps2pdf", "-h", "ghostscript", 1)
 check("unoconv", "-h", "python-uno (and unoconv)", 1)
 check("xvfb-run", "-h", "xvfb", 0)
 check("swfdec-thumbnailer", "-h", "swfdec-gnome", 0)
-check("sidplay2", "-h", "sidplay2", 0)
+check("sidplay2", "-h", "sidplay", 0)
 
 check("ruby -rimlib2", "-e nil", "libimlib2-ruby") 
 
