@@ -314,7 +314,7 @@ module Mimetype
         if ["audio/x-mod", "audio/x-xm", "audio/x-it", "audio/x-s3m", "audio/x-stm"].include?(to_s)
           system("mikmod", "-X", "-q", "-d", "3,file=#{tmp2}", uqsfn)
         elsif "audio/prs.sid" == to_s
-          system("sid2wav", "-t180", uqsfn, tmp2)
+          system("sidplay2", "-t3:00", "-w#{tmp2}", uqsfn)
         else
           system("mplayer", "-vc", "null", "-vo", "null", "-ao", "pcm:fast:file=#{tmp2}", uqsfn)
         end
