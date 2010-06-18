@@ -129,7 +129,7 @@ module Mimetype
       elsif to_s == "application/x-shockwave-flash"
         page = 0
         swf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
-      elsif to_s =~ /powerpoint|vnd\.oasis\.opendocument|msword|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
+      elsif to_s =~ /powerpoint|vnd\.oasis\.opendocument|msword|vnd\.openxml|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
         page ||= 0
         unoconv_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /^audio/

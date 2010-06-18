@@ -19,7 +19,7 @@ when /postscript/
   "postscript"
 when /^text/
   "text"
-when /powerpoint|vnd\.oasis\.opendocument|msword|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
+when /powerpoint|vnd\.oasis\.opendocument|msword|vnd\.openxml|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
   "unoconv"
 else
   nil
