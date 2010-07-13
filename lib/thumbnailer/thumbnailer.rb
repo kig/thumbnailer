@@ -35,7 +35,7 @@ end
 module Thumbnailer
 extend self
 
-  attr_accessor :verbose, :quiet, :icon_dir, :keep_temp
+  attr_accessor :verbose, :quiet, :icon_dir, :keep_temp, :use_fancy_pdf_thumbnail
 
   def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
     nt = Metadata.no_text
@@ -51,7 +51,6 @@ extend self
 end
 
 Thumbnailer.icon_dir ||= __FILE__.to_pn.dirname + 'icons'
-
 
 module Mimetype
 
@@ -109,8 +108,11 @@ module Mimetype
         page ||= 0
         html_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /pdf/
-        page ||= 0
-        pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+        if page == nil
+          fancy_pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+        else
+          pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+        end
       elsif is_a?(Mimetype['image/x-dcraw'])
         page = 0
         dcraw_thumbnail(filename, thumb_filename, thumb_size, page, crop)
@@ -391,7 +393,7 @@ module Mimetype
     __send__(method, filename, tmp_filename) unless tmp_filename.exist?
     rv = false
     if tmp_filename.exist?
-      rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
+      rv = fancy_pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
       tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
     end
     rv
@@ -406,13 +408,14 @@ module Mimetype
   }
 
   def pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+    page ||= 0
     w,h,x,y = crop.scan(/[+-]?[0-9]+/).map{|i|i.to_i}
     secure_filename(filename){|sfn, uqsfn|
       args = ["-x", x,
               "-y", y,
               "-W", w,
               "-H", h,
-              "-scale-to", thumb_size || 2048,
+              "-scale-to", thumb_size.to_i || 2048,
               "-f", page + 1,
               "-l", page + 1,
               sfn]
@@ -420,11 +423,125 @@ module Mimetype
       args += ["|", PNMPROGS[ext], ">", %Q('#{thumb_filename.to_s.gsub("'", "\\\\\'")}')]
       system("pdftoppm " + args.join(" "))
     }
-    if File.exist?(thumb_filename) and File.size(thumb_filename) > 0
-      true
-    else
-      false
-    end
+    File.exist?(thumb_filename) and File.size(thumb_filename) > 0
+  end
+
+  def fancy_pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+    thumb_size ||= 2048
+    f = thumb_size / 256.0
+    require 'imlib2'
+    drawers = [
+      lambda{|ig, xa, ya, xb, yb, cl|
+        w = (xb - xa).abs
+        h = (yb - ya).abs
+        x = [xa, xb].min
+        y = [ya, yb].min
+        next if w == 0 or h == 0
+        ig.fill_rect(x, y, w, h, cl)
+      },
+      lambda{|ig, xa, ya, xb, yb, cl|
+        w = (xb - xa).abs
+        h = (yb - ya).abs
+        x = [xa, xb].min
+        y = [ya, yb].min
+        next if w == 0 or h == 0
+        ig.fill_rect(x, y, w, h, cl)
+      },
+      lambda{|ig, xa, ya, xb, yb, cl|
+        w = (xb - xa).abs
+        h = (yb - ya).abs
+        x = [xa, xb].min
+        y = [ya, yb].min
+        next if w == 0 or h == 0
+        ig.fill_rect(x, y, w, h, cl)
+      },
+      lambda{|ig, xa, ya, xb, yb, cl|
+        w = (xb - xa).abs
+        h = (yb - ya).abs
+        x = [xa, xb].min
+        y = [ya, yb].min
+        next if w == 0 or h == 0
+        ig.fill_rect(x, y, w, h, cl)
+      }
+    ]
+    yd = 16
+
+    item = filename.to_pn
+    item.mimetype = Mimetype['application/pdf']
+    md = item.metadata
+    pagecount = md['Doc.PageCount']
+
+    secure_filename(filename){|sfn, uqsfn|
+      sha = `sha256sum #{sfn}`.split(/\s/)[0]
+
+      img = Imlib2::Image.new(thumb_size, thumb_size)
+      img.has_alpha = true
+      img.clear
+
+      rimg = Imlib2::Image.new(thumb_size, thumb_size)
+      rimg.has_alpha = true
+      rimg.clear
+      palette = sha[0,24].scan(/.{6}/).map{|c|
+        Imlib2::Color::RgbaColor.new(*(c.scan(/../).map{|i|i.hex} + [100]))
+      }
+      family = sha[0][4]*2 + sha[0][5]
+      drawer = drawers[family]
+      sha.scan(/(..)(..)(..)(..)/).each{|s|
+        x1,y1,x2,y2 = s.map{|i| (i.hex*f).to_i }
+        c = palette[x1[1]*2 + x1[0]]
+        drawer.call(rimg, x1, y1, x2, y2, c)
+      }
+      img.blend_image!(rimg,
+        0, 0, rimg.width, rimg.height,
+        20*f, 85*f, 171*f, 171*f
+      )
+      img.blend_image!(rimg,
+        0, 0, rimg.width, rimg.height,
+        (255-60)*f, (255-60)*f, 60*f, 60*f
+      )
+
+      pages = (0...pagecount).map{|i|
+        fn = "/tmp/" + temp_filename + ".png"
+        pdf_thumbnail(uqsfn, fn, 128*f, i, "0x0+0+0")
+        _img=Imlib2::Image.load(fn)
+        File.unlink(fn)
+        _img
+      }
+
+      #fn = "/tmp/"+self.to_s.gsub("/", "-")+".png"
+      #icon_thumbnail(uqsfn, fn, f*64, "0x0+0+0")
+      #icon = Imlib2::Image.load(fn)
+
+      img.blend_image!(pages[0],
+        0, 0, pages[0].width, pages[0].height,
+        f*127-pages[0].width, yd, pages[0].width, pages[0].height
+      )
+      #img.blend_image!(icon, 
+      #  0, 0, icon.width, icon.height,
+      #  f*8, f*8, f*48, f*48
+      #)
+
+      side = Math.sqrt(pages.size).ceil
+      side += side % 2
+      sz = f*128.0 / side
+      sz -= 1
+      layout = pages[1..-1].each_with_index{|pg, i|
+        rw = sz * pg.width / (f*128.0)
+        rh = sz * pg.height / (f*128.0)
+        img.blend_image!(pg,
+          0, 0, pg.width, pg.height,
+          f*128 + ((sz+1) * (i / side) + (sz-rw)),
+          yd + (sz+1) * (i % side),
+          rw.floor, rh.floor
+        )
+      }
+
+      sz = thumb_size.to_i
+      img.crop_scaled!(0,0, img.width, img.height, sz, sz)
+      img.save(thumb_filename)
+    }
+
+    File.exist?(thumb_filename) and File.size(thumb_filename) > 0
   end
 
   def dcraw_thumbnail(filename, thumb_filename, thumb_size, page, crop)
