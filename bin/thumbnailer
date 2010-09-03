@@ -48,6 +48,7 @@ opts = OptionParser.new do |opts|
     options[:allow_inexisting] = true
   }
   opts.on("-k", "--keep-temp", "Don't delete temp PDF files"){|p| Thumbnailer.keep_temp = true }
+  opts.on("--pdf FILENAME", "Use given filename as temp PDF file"){|p| Thumbnailer.temp_pdf_filename = p.to_pn }
   opts.on("-q", "Don't print error messages"){|p| Thumbnailer.quiet = Metadata.quiet = true }
   opts.on("-v", "Verbose output to stderr"){|p| Thumbnailer.verbose = Metadata.verbose = true }
 end

@@ -35,7 +35,7 @@ end
 module Thumbnailer
 extend self
 
-  attr_accessor :verbose, :quiet, :icon_dir, :keep_temp, :use_fancy_pdf_thumbnail
+  attr_accessor :verbose, :quiet, :icon_dir, :keep_temp, :use_fancy_pdf_thumbnail, :temp_pdf_filename
 
   def thumbnail(filename, thumbnail_filename, size=nil, page=nil, crop='0x0+0+0', icon_fallback=true)
     nt = Metadata.no_text
@@ -120,19 +120,15 @@ module Mimetype
         page ||= 0
         image_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /[-\/]dvi$/
-        page ||= 0
         dvi_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /postscript/
-        page ||= 0
         postscript_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /^text/
-        page ||= 0
         text_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s == "application/x-shockwave-flash"
         page = 0
         swf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /powerpoint|vnd\.oasis\.opendocument|msword|vnd\.openxml|ms-excel|rtf|x-tex|template|stardivision|comma-separated-values|dbf|vnd\.sun\.xml/
-        page ||= 0
         unoconv_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /^audio/
         page ||= 0
@@ -389,11 +385,15 @@ module Mimetype
 
   def pdf_convert_thumbnail(method, filename, thumb_filename, thumb_size, page, crop)
     tfn = filename.to_pn
-    tmp_filename = tfn.dirname + "#{File.basename(filename)}-temp.pdf"
+    tmp_filename = Thumbnailer.temp_pdf_filename || (tfn.dirname + "#{File.basename(filename)}-temp.pdf")
     __send__(method, filename, tmp_filename) unless tmp_filename.exist?
     rv = false
     if tmp_filename.exist?
-      rv = fancy_pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
+      if page == nil
+        rv = fancy_pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop, filename)
+      else 
+        rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
+      end
       tmp_filename.unlink if (!rv or !Thumbnailer.keep_temp)
     end
     rv
@@ -426,7 +426,7 @@ module Mimetype
     File.exist?(thumb_filename) and File.size(thumb_filename) > 0
   end
 
-  def fancy_pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
+  def fancy_pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop, orig_filename=nil)
     thumb_size ||= 2048
     f = thumb_size / 256.0
     require 'imlib2'
@@ -464,7 +464,6 @@ module Mimetype
         ig.fill_rect(x, y, w, h, cl)
       }
     ]
-    yd = 16
 
     item = filename.to_pn
     item.mimetype = Mimetype['application/pdf']
@@ -472,7 +471,11 @@ module Mimetype
     pagecount = md['Doc.PageCount']
 
     secure_filename(filename){|sfn, uqsfn|
-      sha = `sha256sum #{sfn}`.split(/\s/)[0]
+      sha = if orig_filename
+        secure_filename(orig_filename){|ofn,uqofn| `sha256sum #{ofn}` }
+      else
+        `sha256sum #{sfn}`
+      end.strip.split(/\s/)[0]
 
       img = Imlib2::Image.new(thumb_size, thumb_size)
       img.has_alpha = true
@@ -493,11 +496,11 @@ module Mimetype
       }
       img.blend_image!(rimg,
         0, 0, rimg.width, rimg.height,
-        20*f, 85*f, 171*f, 171*f
+        20*f, 0, 171*f, 171*f
       )
       img.blend_image!(rimg,
         0, 0, rimg.width, rimg.height,
-        (255-60)*f, (255-60)*f, 60*f, 60*f
+        (255-60)*f, 0, 60*f, 60*f
       )
 
       pages = (0...pagecount).map{|i|
@@ -508,30 +511,35 @@ module Mimetype
         _img
       }
 
-      #fn = "/tmp/"+self.to_s.gsub("/", "-")+".png"
-      #icon_thumbnail(uqsfn, fn, f*64, "0x0+0+0")
-      #icon = Imlib2::Image.load(fn)
+      fn = "/tmp/" + temp_filename + ".png"
+      icon_thumbnail(uqsfn, fn, f*120, "0x0+0+0")
+      icon = Imlib2::Image.load(fn)
+      File.unlink(fn)
+
+      yd = 254*f-pages[0].height
 
       img.blend_image!(pages[0],
         0, 0, pages[0].width, pages[0].height,
-        f*127-pages[0].width, yd, pages[0].width, pages[0].height
+        0, yd, pages[0].width, pages[0].height
       )
-      #img.blend_image!(icon, 
-      #  0, 0, icon.width, icon.height,
-      #  f*8, f*8, f*48, f*48
-      #)
+      img.blend_image!(icon, 
+        0, 0, icon.width, icon.height,
+        0, 0, f*120, f*120
+      )
 
       side = Math.sqrt(pages.size).ceil
       side += side % 2
       sz = f*128.0 / side
       sz -= 1
+      yd = 126*f
+      pxd = pages[0].width + 1*f
       layout = pages[1..-1].each_with_index{|pg, i|
         rw = sz * pg.width / (f*128.0)
         rh = sz * pg.height / (f*128.0)
         img.blend_image!(pg,
           0, 0, pg.width, pg.height,
-          f*128 + ((sz+1) * (i / side) + (sz-rw)),
-          yd + (sz+1) * (i % side),
+          pxd + ((sz+1) * (i / side) + (sz-rw)),
+          yd + (sz+1) * (i % side) + (sz+1-rh.floor),
           rw.floor, rh.floor
         )
       }
