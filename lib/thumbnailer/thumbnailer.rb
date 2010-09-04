@@ -496,7 +496,7 @@ module Mimetype
       }
       img.blend_image!(rimg,
         0, 0, rimg.width, rimg.height,
-        20*f, 0, 171*f, 171*f
+        16*f, 0, 180*f, 180*f
       )
       img.blend_image!(rimg,
         0, 0, rimg.width, rimg.height,
@@ -512,7 +512,7 @@ module Mimetype
       }
 
       fn = "/tmp/" + temp_filename + ".png"
-      icon_thumbnail(uqsfn, fn, f*120, "0x0+0+0")
+      icon_thumbnail(uqsfn, fn, f*64, "0x0+0+0")
       icon = Imlib2::Image.load(fn)
       File.unlink(fn)
 
@@ -524,7 +524,7 @@ module Mimetype
       )
       img.blend_image!(icon, 
         0, 0, icon.width, icon.height,
-        0, 0, f*120, f*120
+        (256-64)*f, f*60, f*64, f*64
       )
 
       side = Math.sqrt(pages.size).ceil
