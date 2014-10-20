@@ -43,12 +43,15 @@ extend self
     Metadata.no_text = true
     Metadata.guess_metadata = false
     mt = filename.to_pn.mimetype
+STDERR.puts(mt, filename, thumbnail_filename)
     mt.thumbnail(filename.to_s, thumbnail_filename, size, page, crop, icon_fallback)
     Metadata.no_text = nt
     Metadata.guess_metadata = gm
   end
 
 end
+
+Thumbnailer.use_fancy_pdf_thumbnail = false
 
 Thumbnailer.icon_dir ||= __FILE__.to_pn.dirname + 'icons'
 
@@ -108,7 +111,7 @@ module Mimetype
         page ||= 0
         html_thumbnail(filename, thumb_filename, thumb_size, page, crop)
       elsif to_s =~ /pdf/
-        if page == nil
+        if page == nil && Thumbnailer.use_fancy_pdf_thumbnail
           fancy_pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
         else
           pdf_thumbnail(filename, thumb_filename, thumb_size, page, crop)
@@ -389,7 +392,7 @@ module Mimetype
     __send__(method, filename, tmp_filename) unless tmp_filename.exist?
     rv = false
     if tmp_filename.exist?
-      if page == nil
+      if page == nil && Thumbnailer.use_fancy_pdf_thumbnail
         rv = fancy_pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop, filename)
       else 
         rv = pdf_thumbnail(tmp_filename, thumb_filename, thumb_size, page, crop)
@@ -481,13 +484,14 @@ module Mimetype
       img.has_alpha = true
       img.clear
 
+
       rimg = Imlib2::Image.new(thumb_size, thumb_size)
       rimg.has_alpha = true
       rimg.clear
       palette = sha[0,24].scan(/.{6}/).map{|c|
         Imlib2::Color::RgbaColor.new(*(c.scan(/../).map{|i|i.hex} + [100]))
       }
-      family = sha[0][4]*2 + sha[0][5]
+      family = sha.getbyte(0)[4]*2 + sha.getbyte(0)[5]
       drawer = drawers[family]
       sha.scan(/(..)(..)(..)(..)/).each{|s|
         x1,y1,x2,y2 = s.map{|i| (i.hex*f).to_i }
@@ -547,6 +551,7 @@ module Mimetype
       sz = thumb_size.to_i
       img.crop_scaled!(0,0, img.width, img.height, sz, sz)
       img.save(thumb_filename)
+
     }
 
     File.exist?(thumb_filename) and File.size(thumb_filename) > 0
